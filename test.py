@@ -1,13 +1,12 @@
-import datetime, threading, time
+import threading
 
-next_call = time.time()
+def hello_world():
+        print 'Hello!'
+        threading.Timer(2,hello_world).start()
 
-def foo():
-  global next_call
-  print datetime.datetime.now()
-  next_call = next_call+1
-  threading.Timer( next_call - time.time(), foo ).start()
-
-foo()
-
-print "HUGO"
+if __name__ == "__main__":
+    try:
+        hello_world()
+    except KeyboardInterrupt:
+        print '\nGoodbye!'
+    print "main thread exited"
