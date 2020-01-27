@@ -2,6 +2,7 @@ import requests, json, time, datetime, threading, logging, sys
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522 # GND:9, MOSI:19, MISO:21, SCK:11, RST:22, SDA:24
 from validate_email import validate_email
+import MFRC522 # from https://github.com/danjperron/MFRC522-python
 
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG) # CRITICAL, ERROR, WARNING, INFO, DEBUG
 
@@ -106,7 +107,9 @@ class FabmanBridge(object):
 			self.rgbled = RgbLed()
 			GPIO.setwarnings(False)
 			if (self.config["reader_type"] == "MFRC522"):
-				self.reader = SimpleMFRC522()
+				#self.reader = SimpleMFRC522()
+				#self.reader = SimpleMFRC522()
+				self.reader = MFRC522.MFRC522()
 			if (self.config["heartbeat_interval"] > 0):
 				self._start_heartbeat_thread()
 			if (not(self.config["stop_button"] is None)):
@@ -153,7 +156,7 @@ class FabmanBridge(object):
 				self.rgbled.off("g")
 				return True
 			else:
-				logging.warning('Bridge could not be stopped.')
+				logging.error('Bridge could not be stopped.')
 				self.display_error()
 				return False			
 		except Exception as e: 
@@ -165,7 +168,27 @@ class FabmanBridge(object):
 			if (self.config["reader_type"] == "MFRC522"):
 				# does only work with the sample card provided with the reader!!!!!!
 				# solution might be found here: https://www.raspberrypi.org/forums/viewtopic.php?t=154814
-				return str(hex(self.reader.read_id()))[2:10] 
+				
+				#return str(hex(self.reader.read_id()))[2:10] 
+				continue_reading = True
+				while continue_reading:
+					# Scan for cards
+					(status, TagType) = self.reader.MFRC522_Request(self.reader.PICC_REQIDL)
+					# If a card is found
+					if status == self.reader.MI_OK:
+						logging.debug("Card detected")
+						continue_reading = False
+						# Get the UID of the card
+						(status, uid) = self.reader.MFRC522_SelectTagSN()
+						# If we have the UID, continue
+						if status == self.reader.MI_OK:
+							uid_string = ""
+							for i in uid:
+								uid_string += format(i, '02X') 
+							logging.debug("Card uid: " + uid_string)
+							return uid_string
+						else:
+							logging.debug("Card authentication error")				
 			else:
 				logging.error("Undefined reader type")
 				return False
@@ -192,7 +215,7 @@ class FabmanBridge(object):
 
 	def display_error(self,message="ERROR"):
 		try:
-			print(message)
+			logging.error(message)
 			self.rgbled.on("r",0.1)
 			self.rgbled.off("r",0.1)
 			self.rgbled.on("r",0.1)
@@ -206,7 +229,7 @@ class FabmanBridge(object):
 
 	def display_warning(self,message="WARNING"):
 		try:
-			print(message)
+			logging.error(message)
 			self.rgbled.on("b",0.1)
 			self.rgbled.off("b",0.1)
 			self.rgbled.on("b",0.1)
