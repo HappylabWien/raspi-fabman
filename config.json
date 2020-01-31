@@ -1,0 +1,22 @@
+{
+    "Scale 1": {
+        "dout": 5,
+        "name": "B\u00fcroklammer",
+        "offset": 230503.13333333333,
+        "price": 1,
+        "ref": 2078.3630849220103,
+        "sku": "98098",
+        "spd_sck": 6,
+        "weight": 0.39
+    },
+    "Scale 2": {
+        "dout": 23,
+        "name": "Bohrer 2mm",
+        "offset": 94834.26666666666,
+        "price": 19.9,
+        "ref": 399.21230502599656,
+        "sku": "98099",
+        "spd_sck": 24,
+        "weight": 23.39
+    }
+}

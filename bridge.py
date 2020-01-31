@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from raspifabman import FabmanBridge
 import sys # because api token is read from command line
 

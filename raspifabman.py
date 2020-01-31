@@ -1,14 +1,15 @@
 import requests, json, time, datetime, threading, logging, sys
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522 # GND:9, MOSI:19, MISO:21, SCK:11, RST:22, SDA:24
-from validate_email import validate_email
+#from validate_email import validate_email # is already included in python3 (import for python2.7 needed)
 import MFRC522 # from https://github.com/danjperron/MFRC522-python
 
-logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG) # CRITICAL, ERROR, WARNING, INFO, DEBUG
+logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
 
 class RgbLed(object):
 
-	def __init__(self, r_pin = 11, g_pin = 13, b_pin = 15):
+	#def __init__(self, r_pin = 11, g_pin = 13, b_pin = 15): # BOARD mode
+	def __init__(self, r_pin = 17, g_pin = 27, b_pin = 22): # BCM mode
 
 		try:
 			GPIO.setwarnings(False)
@@ -18,7 +19,7 @@ class RgbLed(object):
 			self.r_state = False
 			self.g_state = False
 			self.b_state = False
-			GPIO.setmode(GPIO.BOARD)
+			GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)
 			GPIO.setup(r_pin, GPIO.OUT, initial= GPIO.LOW)
 			GPIO.setup(g_pin, GPIO.OUT, initial= GPIO.LOW)
 			GPIO.setup(b_pin, GPIO.OUT, initial= GPIO.LOW)
@@ -93,8 +94,9 @@ class FabmanBridge(object):
 			self.config = { # default values
 						"api_url_base"       : "https://fabman.io/api/v1/", # api url base / for production systems remove "internal."
 						"heartbeat_interval" : 30, # in seconds
-						"stop_button"        : 7, # stop button pin number (board mode, e.g. use 7 for GPIO4)
-						"reader_type"        : "MFRC522" # for NFC cards (so far, it works only with cards provided with the reader!!!)
+						#"stop_button"        : 7, # stop button pin number (BOARD mode, e.g. use 7 for GPIO4)
+						"stop_button"        : 4, # stop button pin number (BCM mode, e.g. use 7 for GPIO4)
+						"reader_type"        : "MFRC522" # for NFC cards
 					  }
 			self.config.update(config)
 			#self.api_url_base = config["api_url_base"]
@@ -113,7 +115,7 @@ class FabmanBridge(object):
 			if (self.config["heartbeat_interval"] > 0):
 				self._start_heartbeat_thread()
 			if (not(self.config["stop_button"] is None)):
-				GPIO.setmode(GPIO.BOARD)  
+				GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)  
 				GPIO.setup(self.config["stop_button"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 				GPIO.add_event_detect(self.config["stop_button"], GPIO.FALLING, callback=self._callback_stop_button, bouncetime=300)
 		except Exception as e: 
@@ -123,8 +125,8 @@ class FabmanBridge(object):
 			   user_id, # user_id can be email address or rfid key
 			   chip_type = "nfca" # em4102, nfca, nfcb, nfcf, iso15693, hid
 			  ): 
-		try:
-			if (validate_email(user_id)): # authenticate with email address
+		#try:
+			if ("@" in str(user_id)): # authenticate with email address
 				data = { 'emailAddress': user_id, 'configVersion': 0 }
 			else: # authenticate with rfid key 
 				data = { "keys": [ { "type": chip_type, "token": user_id } ], "configVersion": 0 }
@@ -140,14 +142,41 @@ class FabmanBridge(object):
 				logging.warning('Bridge could not be started.')
 				self.display_error()
 				return False
-		except Exception as e: 
-			logging.error('Function FabmanBridge.access raised exception (' + str(e) + ')')
-			return False
+		#except Exception as e: 
+		#	logging.error('Function FabmanBridge.access raised exception (' + str(e) + ')')
+		#	return False
 	
-	def stop(self):
+	def stop(self, metadata = None, charge = None):
 		try:
 			api_url = '{0}bridge/stop'.format(self.config["api_url_base"])
+
 			data = { "stopType": "normal", "currentSession": { "id": self.session_id } }
+			if (metadata is not None):
+				data['currentSession'].update( { 'metadata' : metadata } )
+			if (charge is not None):
+				data['currentSession'].update( { 'charge' : charge } )			
+
+			'''
+			if (metadata is None): # do not set metadata if no data available
+				#data = { "stopType": "normal", "currentSession": { "id": sessionId, "idleDurationSeconds": idleTime } }
+				data = { "stopType": "normal", "currentSession": { "id": self.session_id } }
+			else: # set metadata, if available
+				try:
+					data = { "stopType": "normal", "currentSession": { "id": sessionId, "idleDurationSeconds": idleTime, "metadata": metadata, "charge": create_charge(get_metadata()) } }
+				except: # no charge data available
+					data = { "stopType": "normal", "currentSession": { "id": sessionId, "idleDurationSeconds": idleTime, "metadata": metadata } }
+			
+					data = { 
+							"stopType": "normal", 
+							"currentSession": { 
+												"id": sessionId, 
+												"idleDurationSeconds": idleTime, 
+												"metadata": metadata, 
+												"charge": create_charge(get_metadata()) 
+											  } 
+						   }		
+			'''
+			
 			response = requests.post(api_url, headers=self.api_header, json=data)
 			if response.status_code == 200 or response.status_code == 204:
 				#self.user_id = None
@@ -166,9 +195,6 @@ class FabmanBridge(object):
 	def read_key(self):
 		try:
 			if (self.config["reader_type"] == "MFRC522"):
-				# does only work with the sample card provided with the reader!!!!!!
-				# solution might be found here: https://www.raspberrypi.org/forums/viewtopic.php?t=154814
-				
 				#return str(hex(self.reader.read_id()))[2:10] 
 				continue_reading = True
 				while continue_reading:
