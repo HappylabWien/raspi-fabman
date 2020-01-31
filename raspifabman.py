@@ -88,22 +88,28 @@ class RgbLed(object):
 
 class FabmanBridge(object):
 
-	def __init__(self, api_token, config = { }):
+	def __init__(self, config = None): # if no config is given read config from "articles.json"
 		try:
-			self.api_token = api_token
-			self.config = { # default values
-						"api_url_base"       : "https://fabman.io/api/v1/", # api url base / for production systems remove "internal."
-						"heartbeat_interval" : 30, # in seconds
-						#"stop_button"        : 7, # stop button pin number (BOARD mode, e.g. use 7 for GPIO4)
-						"stop_button"        : 4, # stop button pin number (BCM mode, e.g. use 7 for GPIO4)
-						"reader_type"        : "MFRC522" # for NFC cards
-					  }
-			self.config.update(config)
+			if (config is None):
+				self.load_config()
+			else:
+				self.config = config
+		
+			#self.api_token = api_token
+			#self.config = { # default values
+			#			"api_url_base"       : "https://fabman.io/api/v1/", # api url base / for production systems remove "internal."
+			#			"heartbeat_interval" : 30, # in seconds
+			#			"stop_button"        : 4, # stop button pin number (BCM mode, e.g. use 4 for GPIO4)
+			#			"reader_type"        : "MFRC522" # for NFC cards
+			#		  }
+			#self.config.update(config)
+
 			#self.api_url_base = config["api_url_base"]
 			#self.heartbeat_interval = config["heartbeat_interval"]
 			#self.stop_button = config["stop_button"]
 			#self.reader_type = config["reader_type"]
-			self.api_header = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(self.api_token)}
+
+			self.api_header = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(self.config['api_token'])}
 			self.session_id = None
 			self.next_heartbeat_call = time.time()
 			self.rgbled = RgbLed()
@@ -120,6 +126,24 @@ class FabmanBridge(object):
 				GPIO.add_event_detect(self.config["stop_button"], GPIO.FALLING, callback=self._callback_stop_button, bouncetime=300)
 		except Exception as e: 
 			logging.error('Function FabmanBridge.__init__ raised exception (' + str(e) + ')')
+
+	def save_config(self, filename = "fabman.json"):
+		try:
+			with open(filename, 'w') as fp:
+				json.dump(self.config, fp, sort_keys=True, indent=4)
+			return True
+		except Exception as e: 
+			logging.error('Function FabmanBridge.save_config raised exception (' + str(e) + ')')
+			return False
+
+	def load_config(self, filename = "fabman.json"):
+		try:
+			with open(filename, 'r') as fp:
+				self.config = json.load(fp)
+			return self.config
+		except Exception as e: 
+			logging.error('Function FabmanBridge.save_config raised exception (' + str(e) + ')')
+			return False
 
 	def access(self,
 			   user_id, # user_id can be email address or rfid key
