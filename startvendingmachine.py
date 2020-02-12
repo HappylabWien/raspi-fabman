@@ -10,7 +10,7 @@ config = { # change default settings
 	"heartbeat_interval" : 30
 }
 #bridge = FabmanBridge(sys.argv[1], config)
-bridge = FabmanBridge()
+bridge = FabmanBridge() # read config from "fabman.json"
 
 vend = None
 #vend = Vend() # uncomment this to active vend sync (configure in vend.json)

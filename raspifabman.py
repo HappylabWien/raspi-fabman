@@ -3,8 +3,48 @@ import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522 # GND:9, MOSI:19, MISO:21, SCK:11, RST:22, SDA:24
 #from validate_email import validate_email # is already included in python3 (import for python2.7 needed)
 import MFRC522 # from https://github.com/danjperron/MFRC522-python
+import serial
+import binascii
+import pprint
 
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
+
+class Gwiot7941E(object):
+
+	def __init__(self, port = "/dev/ttyS0", baud = 9600):
+
+		try:
+			self.ser = serial.Serial(port, baudrate = baud, parity = serial.PARITY_NONE, stopbits = serial.STOPBITS_ONE, bytesize = serial.EIGHTBITS)
+		except Exception as e: 
+			logging.error('Function Gwiot7941E.__init__ raised exception (' + str(e) + ')')
+
+	def read(self): # duration in seconds (blocking), None means infinite (non-blocking)
+		#try:
+			#print "Waiting for EM4100 chip..."
+			while True:
+				nbChars = self.ser.inWaiting()
+				if nbChars > 0:
+					data = self.ser.read(nbChars)
+					data = binascii.b2a_hex(data)
+					data = binascii.unhexlify(data)
+					checksum_7941E = 0
+					for i in range(1, 8):
+						checksum_7941E ^= data[i]
+					if (checksum_7941E != data[8]):
+						logging.error('RFID read error: wrong checksum')
+						return False
+					checksum_ID12 = 0
+					for i in range(3, 8):
+						checksum_ID12 ^= data[i]
+					fabman_key = 	format(data[3],"x").zfill(2) + format(data[4],"x").zfill(2) + format(data[5],"x").zfill(2) + format(data[6],"x").zfill(2) + format(data[7],"x").zfill(2) + format(checksum_ID12,"x")
+					logging.debug ('Successfully read RFID key ' + fabman_key)
+					return fabman_key
+					
+				else:
+					time.sleep(0.1)
+						
+		#except Exception as e: 
+		#	logging.error('Function Gwiot7941E.read raised exception (' + str(e) + ')')
 
 class RgbLed(object):
 
@@ -88,7 +128,7 @@ class RgbLed(object):
 
 class FabmanBridge(object):
 
-	def __init__(self, config = None): # if no config is given read config from "articles.json"
+	def __init__(self, config = None): # if no config is given read config from "fabman.json"
 		try:
 			if (config is None):
 				self.load_config()
@@ -118,6 +158,11 @@ class FabmanBridge(object):
 				#self.reader = SimpleMFRC522()
 				#self.reader = SimpleMFRC522()
 				self.reader = MFRC522.MFRC522()
+				self.chip_type = "nfca"
+			elif (self.config["reader_type"] == "Gwiot7941E"):
+				#print ("setze reader")
+				self.reader = Gwiot7941E()
+				self.chip_type = "em4102"
 			if (self.config["heartbeat_interval"] > 0):
 				self._start_heartbeat_thread()
 			if (not(self.config["stop_button"] is None)):
@@ -145,15 +190,12 @@ class FabmanBridge(object):
 			logging.error('Function FabmanBridge.save_config raised exception (' + str(e) + ')')
 			return False
 
-	def access(self,
-			   user_id, # user_id can be email address or rfid key
-			   chip_type = "nfca" # em4102, nfca, nfcb, nfcf, iso15693, hid
-			  ): 
+	def access(self, user_id):# user_id can be email address or rfid key 
 		#try:
 			if ("@" in str(user_id)): # authenticate with email address
 				data = { 'emailAddress': user_id, 'configVersion': 0 }
 			else: # authenticate with rfid key 
-				data = { "keys": [ { "type": chip_type, "token": user_id } ], "configVersion": 0 }
+				data = { "keys": [ { "type": self.chip_type, "token": user_id } ], "configVersion": 0 }
 			api_url = '{0}bridge/access'.format(self.config["api_url_base"])
 			response = requests.post(api_url, headers=self.api_header, json=data)
 			if (response.status_code == 200 and json.loads(response.content.decode('utf-8'))['type'] == "allowed"):
@@ -209,7 +251,10 @@ class FabmanBridge(object):
 				self.rgbled.off("g")
 				return True
 			else:
-				logging.error('Bridge could not be stopped.')
+				logging.error('Bridge could not be stopped (status code ' + str(response.status_code) + ')')
+				#print("HALLLLLO")
+				#pprint.pprint(data)
+				#pprint.pprint(response)
 				self.display_error()
 				return False			
 		except Exception as e: 
@@ -217,7 +262,7 @@ class FabmanBridge(object):
 			return False
 
 	def read_key(self):
-		try:
+		#try:
 			if (self.config["reader_type"] == "MFRC522"):
 				#return str(hex(self.reader.read_id()))[2:10] 
 				continue_reading = True
@@ -239,12 +284,15 @@ class FabmanBridge(object):
 							return uid_string
 						else:
 							logging.debug("Card authentication error")				
+			elif (self.config["reader_type"] == "Gwiot7941E"):
+				uid_string = self.reader.read()
+				return uid_string
 			else:
 				logging.error("Undefined reader type")
 				return False
-		except Exception as e: 
-			logging.error('Function FabmanBridge.read_key raised exception (' + str(e) + ')')
-			return False
+		#except Exception as e: 
+		#	logging.error('Function FabmanBridge.read_key raised exception (' + str(e) + ')')
+		#	return False
 		
 	def is_on(self):
 		try:

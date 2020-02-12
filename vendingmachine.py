@@ -157,7 +157,7 @@ class VendingMachine(object):
 				self.config = config
 			self.scales = {}
 			self.transactions = {}
-			self.charge = { 'description' : None, 'price' : 0.0 }
+			self.charge = { 'description' : "n/a", 'price' : 0.0 }
 			self._setup()
 			#pprint.pprint(self.config)
 		except Exception as e: 
@@ -178,7 +178,7 @@ class VendingMachine(object):
 									'stock_old'   : 0, 
 									'weight_loss' : 0, 
 									'items_taken' : 0, 
-									'description' : "", 
+									'description' : "n/a", 
 									'price'       : 0.0 
 								   }
 			return True
@@ -267,7 +267,7 @@ class VendingMachine(object):
 
 
 	def run(self):
-		try:
+		#try:
 
 
 			while True:
@@ -317,7 +317,7 @@ class VendingMachine(object):
 								description = str(items_taken) + " x " + self.config[key]['name'] + " á " + "{:.2f}".format(self.config[key]['price'])
 								price = items_taken * self.config[key]['price']
 							else:
-								description = None
+								description = "n/a"
 								price = 0.0
 							self.transactions[key].update( { 
 												'weight_new'  : weight_new, 
@@ -329,11 +329,11 @@ class VendingMachine(object):
 											   } )
 						
 						# (5) create charge in fabman
-						self.charge = { 'description' : None, 'price' : 0.0 }
+						self.charge = { 'description' : "n/a", 'price' : 0.0 }
 						for key in self.transactions:
 							if (self.transactions[key]['items_taken'] > 0):
 								self.charge['price'] += self.transactions[key]['price']
-								if (self.charge['description'] is None):
+								if (self.charge['description'] == "n/a"):
 									self.charge['description'] = str(self.transactions[key]['description'])
 								else:
 									self.charge['description'] += " and " + self.transactions[key]['description']
@@ -376,7 +376,7 @@ class VendingMachine(object):
 					sys.exit()
 
 
-		except Exception as e: 
-			logging.error('Function VendingMachine.run raised exception (' + str(e) + ')')
-			return False
+		#except Exception as e: 
+		#	logging.error('Function VendingMachine.run raised exception (' + str(e) + ')')
+		#	return False
 

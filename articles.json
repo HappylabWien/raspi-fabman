@@ -2,20 +2,20 @@
     "Scale 1": {
         "dout": 5,
         "name": "B\u00fcroklammer",
-        "offset": 230503.13333333333,
+        "offset": 230654.73333333334,
         "price": 1,
-        "ref": 2078.3630849220103,
         "product_id": "2620647f-85b7-6e07-8505-33fe822c2266",
+        "ref": 2077.6802426343156,
         "spd_sck": 6,
         "weight": 0.39
     },
     "Scale 2": {
         "dout": 23,
         "name": "Bohrer 2mm",
-        "offset": 94834.26666666666,
+        "offset": 95115,
         "price": 19.9,
-        "ref": 399.21230502599656,
         "product_id": "2620647f-85b7-6e07-8505-33fe822c2266",
+        "ref": 399.5814558058926,
         "spd_sck": 24,
         "weight": 23.39
     }
