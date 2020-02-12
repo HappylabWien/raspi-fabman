@@ -1,26 +1,26 @@
+# python3
 import requests, json, time, datetime, threading, logging, sys
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522 # GND:9, MOSI:19, MISO:21, SCK:11, RST:22, SDA:24
-#from validate_email import validate_email # is already included in python3 (import for python2.7 needed)
 import MFRC522 # from https://github.com/danjperron/MFRC522-python
 import serial
 import binascii
 import pprint
+from gpiozero import RGBLED
+from colorzero import Color
 
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
 
 class Gwiot7941E(object):
 
 	def __init__(self, port = "/dev/ttyS0", baud = 9600):
-
 		try:
 			self.ser = serial.Serial(port, baudrate = baud, parity = serial.PARITY_NONE, stopbits = serial.STOPBITS_ONE, bytesize = serial.EIGHTBITS)
 		except Exception as e: 
 			logging.error('Function Gwiot7941E.__init__ raised exception (' + str(e) + ')')
 
-	def read(self): # duration in seconds (blocking), None means infinite (non-blocking)
-		#try:
-			#print "Waiting for EM4100 chip..."
+	def read(self): 
+		try:
 			while True:
 				nbChars = self.ser.inWaiting()
 				if nbChars > 0:
@@ -36,16 +36,15 @@ class Gwiot7941E(object):
 					checksum_ID12 = 0
 					for i in range(3, 8):
 						checksum_ID12 ^= data[i]
-					fabman_key = 	format(data[3],"x").zfill(2) + format(data[4],"x").zfill(2) + format(data[5],"x").zfill(2) + format(data[6],"x").zfill(2) + format(data[7],"x").zfill(2) + format(checksum_ID12,"x")
+					fabman_key = format(data[3],"x").zfill(2) + format(data[4],"x").zfill(2) + format(data[5],"x").zfill(2) + format(data[6],"x").zfill(2) + format(data[7],"x").zfill(2) + format(checksum_ID12,"x")
 					logging.debug ('Successfully read RFID key ' + fabman_key)
 					return fabman_key
-					
 				else:
 					time.sleep(0.1)
-						
-		#except Exception as e: 
-		#	logging.error('Function Gwiot7941E.read raised exception (' + str(e) + ')')
+		except Exception as e: 
+			logging.error('Function Gwiot7941E.read raised exception (' + str(e) + ')')
 
+'''
 class RgbLed(object):
 
 	#def __init__(self, r_pin = 11, g_pin = 13, b_pin = 15): # BOARD mode
@@ -125,6 +124,7 @@ class RgbLed(object):
 					self.b_state = True
 		except Exception as e: 
 			logging.error('Function RgbLed.toggle raised exception (' + str(e) + ')')
+'''
 
 class FabmanBridge(object):
 
@@ -135,6 +135,7 @@ class FabmanBridge(object):
 			else:
 				self.config = config
 		
+			
 			#self.api_token = api_token
 			#self.config = { # default values
 			#			"api_url_base"       : "https://fabman.io/api/v1/", # api url base / for production systems remove "internal."
@@ -152,8 +153,9 @@ class FabmanBridge(object):
 			self.api_header = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(self.config['api_token'])}
 			self.session_id = None
 			self.next_heartbeat_call = time.time()
-			self.rgbled = RgbLed()
+			self.rgbled = RGBLED(self.config["led_r"], self.config["led_g"], self.config["led_b"])
 			GPIO.setwarnings(False)
+			
 			if (self.config["reader_type"] == "MFRC522"):
 				#self.reader = SimpleMFRC522()
 				#self.reader = SimpleMFRC522()
@@ -191,7 +193,7 @@ class FabmanBridge(object):
 			return False
 
 	def access(self, user_id):# user_id can be email address or rfid key 
-		#try:
+		try:
 			if ("@" in str(user_id)): # authenticate with email address
 				data = { 'emailAddress': user_id, 'configVersion': 0 }
 			else: # authenticate with rfid key 
@@ -200,7 +202,8 @@ class FabmanBridge(object):
 			response = requests.post(api_url, headers=self.api_header, json=data)
 			if (response.status_code == 200 and json.loads(response.content.decode('utf-8'))['type'] == "allowed"):
 				logging.info('Bridge started successfully.')
-				self.rgbled.on("g")
+				#self.rgbled.on("g")
+				self.rgbled.color = Color('green')
 				logging.debug('Press button to switch off.')
 				self.session_id = json.loads(response.content.decode('utf-8'))["sessionId"]
 				return True
@@ -208,9 +211,9 @@ class FabmanBridge(object):
 				logging.warning('Bridge could not be started.')
 				self.display_error()
 				return False
-		#except Exception as e: 
-		#	logging.error('Function FabmanBridge.access raised exception (' + str(e) + ')')
-		#	return False
+		except Exception as e: 
+			logging.error('Function FabmanBridge.access raised exception (' + str(e) + ')')
+			return False
 	
 	def stop(self, metadata = None, charge = None):
 		try:
@@ -248,13 +251,11 @@ class FabmanBridge(object):
 				#self.user_id = None
 				self.session_id = None
 				logging.info('Bridge stopped successfully.')
-				self.rgbled.off("g")
+				#self.rgbled.off("g")
+				self.rgbled.off()
 				return True
 			else:
 				logging.error('Bridge could not be stopped (status code ' + str(response.status_code) + ')')
-				#print("HALLLLLO")
-				#pprint.pprint(data)
-				#pprint.pprint(response)
 				self.display_error()
 				return False			
 		except Exception as e: 
@@ -262,7 +263,7 @@ class FabmanBridge(object):
 			return False
 
 	def read_key(self):
-		#try:
+		try:
 			if (self.config["reader_type"] == "MFRC522"):
 				#return str(hex(self.reader.read_id()))[2:10] 
 				continue_reading = True
@@ -290,9 +291,9 @@ class FabmanBridge(object):
 			else:
 				logging.error("Undefined reader type")
 				return False
-		#except Exception as e: 
-		#	logging.error('Function FabmanBridge.read_key raised exception (' + str(e) + ')')
-		#	return False
+		except Exception as e: 
+			logging.error('Function FabmanBridge.read_key raised exception (' + str(e) + ')')
+			return False
 		
 	def is_on(self):
 		try:
@@ -314,12 +315,13 @@ class FabmanBridge(object):
 	def display_error(self,message="ERROR"):
 		try:
 			logging.error(message)
-			self.rgbled.on("r",0.1)
-			self.rgbled.off("r",0.1)
-			self.rgbled.on("r",0.1)
-			self.rgbled.off("r",0.1)
-			self.rgbled.on("r",0.1)
-			self.rgbled.off("r")			
+			#self.rgbled.on("r",0.1)
+			#self.rgbled.off("r",0.1)
+			#self.rgbled.on("r",0.1)
+			#self.rgbled.off("r",0.1)
+			#self.rgbled.on("r",0.1)
+			#self.rgbled.off("r")	
+			self.rgbled.blink(0.1, 0.1, 0, 0, Color('red'), Color('black'), 3, True)
 			return True
 		except Exception as e: 
 			logging.error('Function FabmanBridge.display_error raised exception (' + str(e) + ')')
@@ -328,12 +330,13 @@ class FabmanBridge(object):
 	def display_warning(self,message="WARNING"):
 		try:
 			logging.error(message)
-			self.rgbled.on("b",0.1)
-			self.rgbled.off("b",0.1)
-			self.rgbled.on("b",0.1)
-			self.rgbled.off("b",0.1)
-			self.rgbled.on("b",0.1)
-			self.rgbled.off("b")			
+			#self.rgbled.on("b",0.1)
+			#self.rgbled.off("b",0.1)
+			#self.rgbled.on("b",0.1)
+			#self.rgbled.off("b",0.1)
+			#self.rgbled.on("b",0.1)
+			#self.rgbled.off("b")			
+			self.rgbled.blink(0.1, 0.1, 0, 0, Color('yellow'), Color('black'), 3, True)
 			return True
 		except Exception as e: 
 			logging.error('Function FabmanBridge.display_error raised exception (' + str(e) + ')')

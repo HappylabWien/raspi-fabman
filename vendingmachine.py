@@ -164,7 +164,7 @@ class VendingMachine(object):
 			logging.error('Function VendingMachine.__init__ raised exception (' + str(e) + ')')
 
 	def _setup(self):
-		#try:
+		try:
 			for key in self.config:
 				print ("Initializing " + key)
 				self.scales[key] = Scale(HX711(self.config[key]['dout'],self.config[key]['spd_sck'])) 
@@ -182,9 +182,9 @@ class VendingMachine(object):
 									'price'       : 0.0 
 								   }
 			return True
-		#except Exception as e: 
-		#	logging.error('Function VendingMachine.setup raised exception (' + str(e) + ')')
-		#	return False
+		except Exception as e: 
+			logging.error('Function VendingMachine.setup raised exception (' + str(e) + ')')
+			return False
 	
 	def save_config(self, filename = "articles.json"):
 		try:
