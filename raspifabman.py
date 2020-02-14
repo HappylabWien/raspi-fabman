@@ -1,13 +1,32 @@
 # python3
-import requests, json, time, datetime, threading, logging, sys
+
+import requests, json, time, datetime, threading, logging, sys, pprint
 import RPi.GPIO as GPIO
+
+# for MFRC522 NFC Reader
 from mfrc522 import SimpleMFRC522 # GND:9, MOSI:19, MISO:21, SCK:11, RST:22, SDA:24
 import MFRC522 # from https://github.com/danjperron/MFRC522-python
+
+# for Gwiot 7941E RFID Reader
 import serial
 import binascii
-import pprint
+
+# for RGB Led
 from gpiozero import RGBLED
 from colorzero import Color
+
+# for Email Alerts
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.header import Header
+
+# for OLED Display
+import Adafruit_GPIO.SPI as SPI
+import Adafruit_SSD1306
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
 
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
 
@@ -342,6 +361,102 @@ class FabmanBridge(object):
 			logging.error('Function FabmanBridge.display_error raised exception (' + str(e) + ')')
 			return False
 
+	def display_text(self, text= "", duration = None): # duration None = forever
+		try:
+			if (self.config["display"] == "SSD1306_128_32"):
+			
+				# Raspberry Pi pin configuration:
+				RST = None     # on the PiOLED this pin isnt used
+
+				# 128x32 display with hardware I2C:
+				disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST)
+
+				# 128x64 display with hardware I2C:
+				# disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST)
+
+				# Note you can change the I2C address by passing an i2c_address parameter like:
+				# disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3C)
+
+				# Alternatively you can specify an explicit I2C bus number, for example
+				# with the 128x32 display you would use:
+				# disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST, i2c_bus=2)
+
+				# 128x32 display with hardware SPI:
+				# disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST, dc=DC, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=8000000))
+
+				# 128x64 display with hardware SPI:
+				# disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST, dc=DC, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=8000000))
+
+				# Alternatively you can specify a software SPI implementation by providing
+				# digital GPIO pin numbers for all the required display pins.  For example
+				# on a Raspberry Pi with the 128x32 display you might use:
+				# disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST, dc=DC, sclk=18, din=25, cs=22)
+
+				# Initialize library.
+				disp.begin()
+
+				# Clear display.
+				disp.clear()
+				disp.display()
+
+				# Create blank image for drawing.
+				# Make sure to create image with mode '1' for 1-bit color.
+				width = disp.width
+				height = disp.height
+				image = Image.new('1', (width, height))
+
+				# Get drawing object to draw on image.
+				draw = ImageDraw.Draw(image)
+
+				# Draw a black filled box to clear the image.
+				draw.rectangle((0,0,width,height), outline=0, fill=0)
+
+				# Load default font.
+				font = ImageFont.load_default()
+
+				# Alternatively load a TTF font.  Make sure the .ttf font file is in the same directory as the python script!
+				# Some other nice fonts to try: http://www.dafont.com/bitmap.php
+				# font = ImageFont.truetype('Minecraftia.ttf', 8)
+
+				# Draw a black filled box to clear the image.
+				draw.rectangle((0,0,width,height), outline=0, fill=0)
+
+				# Draw some shapes.
+				# First define some constants to allow easy resizing of shapes.
+				x = 0
+				padding = -2
+				top = padding
+				bottom = height-padding
+				linespacing = 8
+
+				# Write two lines of text.
+				lines = text.split("\n")
+				if (len(lines) >= 1):
+					draw.text((x, top+0*linespacing), lines[0],  font=font, fill=255)
+				if (len(lines) >= 2):
+					draw.text((x, top+1*linespacing), lines[1],  font=font, fill=255)
+				if (len(lines) >= 3):
+					draw.text((x, top+2*linespacing), lines[2],  font=font, fill=255)
+				if (len(lines) >= 4):
+					draw.text((x, top+3*linespacing), lines[3],  font=font, fill=255)
+
+				# Display image.
+				disp.image(image)
+				disp.display()
+
+				if (duration is not None):
+					time.sleep(duration)
+					# Clear display.
+					disp.clear()
+					disp.display()	
+			
+			else:
+				logging.warning('Unsupported display type:' + str(self.config["display"]))
+			return True
+		except Exception as e: 
+			logging.error('Function FabmanBridge.display_error raised exception (' + str(e) + ')')
+			return False
+
 	def _start_heartbeat_thread(self):
 		try:
 			#print datetime.datetime.now()
@@ -384,9 +499,45 @@ class FabmanBridge(object):
 			while (True):
 				if (self.is_off()):
 					logging.debug("Ready to read nfc key ...")
-					self.access(self.read_key())
+					key = self.read_key()
+					if (key != False and key is not None):
+						self.access()
 		except Exception as e: 
 			logging.error('Function FabmanBridge.run raised exception (' + str(e) + ')')
+			return False
+
+	def send_email(self, subject, text, email_to = None):
+		try:
+		
+			# default values from fabman.json
+			if (email_to is None):
+				email_to = self.config["email_operator"]
+			
+			server = smtplib.SMTP(self.config["email_smtp"], self.config["email_port"])
+			server.ehlo()
+			server.starttls()
+			server.login(self.config["email_sender"], self.config["email_password"])
+
+			msg = MIMEMultipart('alternative')
+			msg.set_charset('utf8')
+			msg['FROM'] = self.config["email_sender"]
+			msg['Subject'] = Header(
+				subject.encode('utf-8'),
+				'UTF-8'
+			).encode()
+			msg['To'] = email_to
+			_attach = MIMEText(text.encode('utf-8'), 'html', 'UTF-8')        
+			msg.attach(_attach)
+			
+			server.sendmail(self.config["email_sender"], [email_to], msg.as_string())
+
+			logging.info('Email "' + subject + '" sent to ' + email_to + ': ' + text)
+			server.quit()		
+
+		except Exception as e: 
+			logging.error('Sending email "' + subject + '" to ' + email_to + 'FAILED: ' + text)
+			logging.error('Function FabmanBridge.send_email raised exception (' + str(e) + ')')
+			server.quit()		
 			return False
 
 '''

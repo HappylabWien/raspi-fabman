@@ -26,6 +26,7 @@ class Vend(object):
 			
 			self.register_sale_products = []
 
+			#pprint.pprint(self.config)
 		except Exception as e: 
 			logging.error('Function Vend.__init__ raised exception (' + str(e) + ')')
 	
@@ -167,6 +168,7 @@ class VendingMachine(object):
 		try:
 			for key in self.config:
 				print ("Initializing " + key)
+				self.bridge.display_text("Initializing\n" + str(key))
 				self.scales[key] = Scale(HX711(self.config[key]['dout'],self.config[key]['spd_sck'])) 
 				self.scales[key].setReferenceUnit(self.config[key]['ref'])
 				self.scales[key].setOffset(self.config[key]['offset'])
@@ -276,6 +278,7 @@ class VendingMachine(object):
 					#	self.bridge.run()
 					
 					print ("READY FOR TRANSACTION - SHOW CARD")
+					self.bridge.display_text("Swipe your\nmember card\nto start\nshopping...")
 					if (self.bridge.access(self.bridge.read_key())): # wait for key card
 						print ("ACCESS GRANTED")
 						# access granted
@@ -299,12 +302,14 @@ class VendingMachine(object):
 							#pprint.pprint(self.transactions)
 							
 						# (2) open door - TODO!!!!!!!!!!!!!!
+						self.bridge.display_text("Access granted\n\nPlease\nopen door...")
 						input ("Press ENTER to open the door...")
+						self.bridge.display_text("Take items and\nclose door to\nfinish shopping")				
 						print ("DOOR OPEN")
 						input ("Take items and press ENTER to close the door...")
 						# (3) wait for door to be closed - TODO!!!!!!!!!!!!!!
 						print ("DOOR CLOSED")
-						
+						self.bridge.display_text("Proecessing\nyourpurchase...")
 						# (4) measure weight at end of transaction again 
 						for key in self.config:
 							weight_new = self.scales[key].getWeight(1)
@@ -319,6 +324,7 @@ class VendingMachine(object):
 							else:
 								description = "n/a"
 								price = 0.0
+									
 							self.transactions[key].update( { 
 												'weight_new'  : weight_new, 
 												'stock_new'   : stock_new,
@@ -328,10 +334,16 @@ class VendingMachine(object):
 												'price'       : price 
 											   } )
 						
+							if (items_taken < 0):
+								# TODO: send email !!!!!!!!!!!!!!!!! ACHTUNG!!!! UMLAUTE SCHICKEN GEHT NICHT!!!!! ('ascii' codec can't encode character '\xf6' in position 116: ordinal not in range(128))
+								self.bridge.send_email("Fabman Vending Machine: Stock Level Increased", "Article:<br>" + str(self.config[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
+
 						# (5) create charge in fabman
 						self.charge = { 'description' : "n/a", 'price' : 0.0 }
+						items_charged = 0
 						for key in self.transactions:
 							if (self.transactions[key]['items_taken'] > 0):
+								items_charged += self.transactions[key]['items_taken']
 								self.charge['price'] += self.transactions[key]['price']
 								if (self.charge['description'] == "n/a"):
 									self.charge['description'] = str(self.transactions[key]['description'])
@@ -350,6 +362,14 @@ class VendingMachine(object):
 						print ("----------------")
 
 						self.bridge.stop(metadata, self.charge) 
+						
+						# show transaction summary on display
+						if (items_charged == 1):
+							text = "1 item taken"
+						else:
+							text = str(items_charged) + " items taken"
+						text += "\nEUR {:.2f}".format(self.charge['price']) + " charged\n\nTHANK YOU!"
+						self.bridge.display_text(text, 10)
 						
 						# (6) create charge in vend
 						if (self.vend is not None):
