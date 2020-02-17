@@ -56,12 +56,13 @@ class Gwiot7941E(object):
 					for i in range(3, 8):
 						checksum_ID12 ^= data[i]
 					fabman_key = format(data[3],"x").zfill(2) + format(data[4],"x").zfill(2) + format(data[5],"x").zfill(2) + format(data[6],"x").zfill(2) + format(data[7],"x").zfill(2) + format(checksum_ID12,"x")
-					logging.debug ('Successfully read RFID key ' + fabman_key)
+					logging.info('Successfully read RFID key ' + fabman_key)
 					return fabman_key
 				else:
-					time.sleep(0.1)
+					time.sleep(0.5)
 		except Exception as e: 
 			logging.error('Function Gwiot7941E.read raised exception (' + str(e) + ')')
+			return False
 
 '''
 class RgbLed(object):
@@ -149,25 +150,22 @@ class FabmanBridge(object):
 
 	def __init__(self, config = None): # if no config is given read config from "fabman.json"
 		try:
+			# default values
+			self.config = {
+							"api_url_base"       : "https://fabman.io/api/v1/",
+							"heartbeat_interval" : 30,
+							"stop_button"        : 4,
+							"reader_type"        : "MFRC522",
+							"led_r"              : 17,
+							"led_g"              : 27,
+							"led_b"              : 22,
+							"display"            : "SSD1306_128_32"
+						  }
+
 			if (config is None):
 				self.load_config()
 			else:
-				self.config = config
-		
-			
-			#self.api_token = api_token
-			#self.config = { # default values
-			#			"api_url_base"       : "https://fabman.io/api/v1/", # api url base / for production systems remove "internal."
-			#			"heartbeat_interval" : 30, # in seconds
-			#			"stop_button"        : 4, # stop button pin number (BCM mode, e.g. use 4 for GPIO4)
-			#			"reader_type"        : "MFRC522" # for NFC cards
-			#		  }
-			#self.config.update(config)
-
-			#self.api_url_base = config["api_url_base"]
-			#self.heartbeat_interval = config["heartbeat_interval"]
-			#self.stop_button = config["stop_button"]
-			#self.reader_type = config["reader_type"]
+				self.config.update(config)
 
 			self.api_header = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(self.config['api_token'])}
 			self.session_id = None
@@ -190,6 +188,9 @@ class FabmanBridge(object):
 				GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)  
 				GPIO.setup(self.config["stop_button"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 				GPIO.add_event_detect(self.config["stop_button"], GPIO.FALLING, callback=self._callback_stop_button, bouncetime=300)
+				
+			self.screen_message = ""
+			
 		except Exception as e: 
 			logging.error('Function FabmanBridge.__init__ raised exception (' + str(e) + ')')
 
@@ -205,7 +206,8 @@ class FabmanBridge(object):
 	def load_config(self, filename = "fabman.json"):
 		try:
 			with open(filename, 'r') as fp:
-				self.config = json.load(fp)
+				file_config = json.load(fp)
+				self.config.update(file_config)
 			return self.config
 		except Exception as e: 
 			logging.error('Function FabmanBridge.save_config raised exception (' + str(e) + ')')
@@ -227,8 +229,8 @@ class FabmanBridge(object):
 				self.session_id = json.loads(response.content.decode('utf-8'))["sessionId"]
 				return True
 			else:
-				logging.warning('Bridge could not be started.')
-				self.display_error()
+				logging.warning('Bridge could not be started (user_id: ' + str(user_id) + ')')
+				self.display_error("Access\ndenied")
 				return False
 		except Exception as e: 
 			logging.error('Function FabmanBridge.access raised exception (' + str(e) + ')')
@@ -331,9 +333,8 @@ class FabmanBridge(object):
 			logging.error('Function FabmanBridge.is_off raised exception (' + str(e) + ')')
 			return False
 
-	def display_error(self,message="ERROR"):
+	def display_error(self, message = None):
 		try:
-			logging.error(message)
 			#self.rgbled.on("r",0.1)
 			#self.rgbled.off("r",0.1)
 			#self.rgbled.on("r",0.1)
@@ -341,14 +342,17 @@ class FabmanBridge(object):
 			#self.rgbled.on("r",0.1)
 			#self.rgbled.off("r")	
 			self.rgbled.blink(0.1, 0.1, 0, 0, Color('red'), Color('black'), 3, True)
+			if (message is not None):
+				logging.error(message)
+				self.display_text(message, 3)
+				print(message)
 			return True
 		except Exception as e: 
 			logging.error('Function FabmanBridge.display_error raised exception (' + str(e) + ')')
 			return False
 
-	def display_warning(self,message="WARNING"):
+	def display_warning(self, message = None):
 		try:
-			logging.error(message)
 			#self.rgbled.on("b",0.1)
 			#self.rgbled.off("b",0.1)
 			#self.rgbled.on("b",0.1)
@@ -356,6 +360,10 @@ class FabmanBridge(object):
 			#self.rgbled.on("b",0.1)
 			#self.rgbled.off("b")			
 			self.rgbled.blink(0.1, 0.1, 0, 0, Color('yellow'), Color('black'), 3, True)
+			if (message is not None):
+				logging.warning(message)
+				self.display_text(message, 3)
+				print(message)
 			return True
 		except Exception as e: 
 			logging.error('Function FabmanBridge.display_error raised exception (' + str(e) + ')')
@@ -363,6 +371,9 @@ class FabmanBridge(object):
 
 	def display_text(self, text= "", duration = None): # duration None = forever
 		try:
+			if (duration is None):
+				self.screen_message = text
+
 			if (self.config["display"] == "SSD1306_128_32"):
 			
 				# Raspberry Pi pin configuration:
@@ -429,7 +440,7 @@ class FabmanBridge(object):
 				bottom = height-padding
 				linespacing = 8
 
-				# Write two lines of text.
+				# Write four lines of text
 				lines = text.split("\n")
 				if (len(lines) >= 1):
 					draw.text((x, top+0*linespacing), lines[0],  font=font, fill=255)
@@ -446,10 +457,20 @@ class FabmanBridge(object):
 
 				if (duration is not None):
 					time.sleep(duration)
-					# Clear display.
+					# clear display
 					disp.clear()
 					disp.display()	
-			
+					# recover previous screen message
+					lines = self.screen_message.split("\n")
+					if (len(lines) >= 1):
+						draw.text((x, top+0*linespacing), lines[0],  font=font, fill=255)
+					if (len(lines) >= 2):
+						draw.text((x, top+1*linespacing), lines[1],  font=font, fill=255)
+					if (len(lines) >= 3):
+						draw.text((x, top+2*linespacing), lines[2],  font=font, fill=255)
+					if (len(lines) >= 4):
+						draw.text((x, top+3*linespacing), lines[3],  font=font, fill=255)
+					
 			else:
 				logging.warning('Unsupported display type:' + str(self.config["display"]))
 			return True

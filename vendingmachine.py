@@ -91,13 +91,13 @@ class Vend(object):
 					  }
 			
 			
-			print ("BEGIN PAYLOAD")
-			pprint.pprint(payload)
-			print ("END PAYLOAD")
+			#print ("BEGIN PAYLOAD")
+			#pprint.pprint(payload)
+			#print ("END PAYLOAD")
 			
 			vend_api_url = self.vend_api_url_base + vend_endpoint
-			print (vend_api_url)
-			print (self.vend_header)
+			#print (vend_api_url)
+			#print (self.vend_header)
 
 			return requests.post(vend_api_url, headers=self.vend_header, json=payload) 
 			
@@ -156,6 +156,13 @@ class VendingMachine(object):
 				self.load_config()
 			else:
 				self.config = config
+				
+			# use default values, if not set in config
+			for key in self.config:
+				#print("KEY = " + str(key))
+				if 'stock_min' not in self.config[key]:
+					self.config[key]['stock_min'] = 0
+				
 			self.scales = {}
 			self.transactions = {}
 			self.charge = { 'description' : "n/a", 'price' : 0.0 }
@@ -185,7 +192,7 @@ class VendingMachine(object):
 								   }
 			return True
 		except Exception as e: 
-			logging.error('Function VendingMachine.setup raised exception (' + str(e) + ')')
+			logging.error('Function VendingMachine._setup raised exception (' + str(e) + ')')
 			return False
 	
 	def save_config(self, filename = "articles.json"):
@@ -247,7 +254,7 @@ class VendingMachine(object):
 					#print ("\nLoaded weight (calibrated): " + str(self.scales[key].getWeight(1)))
 
 					print (str(key) + " calibrated.")
-					pprint.pprint(self.config[key])
+					#pprint.pprint(self.config[key])
 					
 			self.save_config()
 			
@@ -335,8 +342,9 @@ class VendingMachine(object):
 											   } )
 						
 							if (items_taken < 0):
-								# TODO: send email !!!!!!!!!!!!!!!!! ACHTUNG!!!! UMLAUTE SCHICKEN GEHT NICHT!!!!! ('ascii' codec can't encode character '\xf6' in position 116: ordinal not in range(128))
 								self.bridge.send_email("Fabman Vending Machine: Stock Level Increased", "Article:<br>" + str(self.config[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
+							if (items_taken > 0 and self.transactions[key]['stock_new'] <= self.config[key]['stock_min']):
+								self.bridge.send_email("Fabman Vending Machine: Minimum Stock Level Reached", "Article:<br>" + str(self.config[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
 
 						# (5) create charge in fabman
 						self.charge = { 'description' : "n/a", 'price' : 0.0 }
@@ -356,10 +364,10 @@ class VendingMachine(object):
 									'charge'       : self.charge
 								   }
 						
-						print ("----------------")
+						#print ("----------------")
 						#pprint.pprint (self.transactions)
-						pprint.pprint (metadata)
-						print ("----------------")
+						#pprint.pprint (metadata)
+						#print ("----------------")
 
 						self.bridge.stop(metadata, self.charge) 
 						
@@ -369,7 +377,7 @@ class VendingMachine(object):
 						else:
 							text = str(items_charged) + " items taken"
 						text += "\nEUR {:.2f}".format(self.charge['price']) + " charged\n\nTHANK YOU!"
-						self.bridge.display_text(text, 10)
+						self.bridge.display_text(text, 5)
 						
 						# (6) create charge in vend
 						if (self.vend is not None):
