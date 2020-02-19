@@ -6,7 +6,8 @@ import json
 import logging
 import requests
 
-#https://github.com/dcrystalj/hx711py3
+# for load cells
+# https://github.com/dcrystalj/hx711py3
 from scale import Scale
 from hx711 import HX711
 
@@ -148,37 +149,53 @@ class Vend(object):
 		 
 class VendingMachine(object):
 
-	def __init__(self, bridge = None, vend = None, config = None): # if no config is given read config from "articles.json"
+	def __init__(self, bridge = None, vend = None, articles = None, config = None): # if no config/articles is given read config from "vendingmachine.json"/"articles.json"
 		try:
 			self.bridge = bridge
 			self.vend = vend
+			
+			# load article settings
+			if (articles is None):
+				self.load_articles()
+			else:
+				self.articles = articles
+				
+			# use default values, if not set in articles
+			for key in self.articles:
+				#print("KEY = " + str(key))
+				if 'stock_min' not in self.articles[key]:
+					self.articles[key]['stock_min'] = 0
+				
+			self.scales = {}
+			self.transactions = {}
+			self.charge = { 'description' : "n/a", 'price' : 0.0 }
+			self._setup()
+			#pprint.pprint(self.articles)
+			
+			# load config
 			if (config is None):
 				self.load_config()
 			else:
 				self.config = config
 				
 			# use default values, if not set in config
-			for key in self.config:
-				#print("KEY = " + str(key))
-				if 'stock_min' not in self.config[key]:
-					self.config[key]['stock_min'] = 0
-				
-			self.scales = {}
-			self.transactions = {}
-			self.charge = { 'description' : "n/a", 'price' : 0.0 }
-			self._setup()
-			#pprint.pprint(self.config)
+			if 'pin_door_status' not in self.config:
+				self.config['pin_door_status'] = 16			
+			
+			GPIO.setmode(GPIO.BCM)
+			GPIO.setup(self.config['pin_door_status'], GPIO.IN, GPIO.PUD_UP)
+
 		except Exception as e: 
 			logging.error('Function VendingMachine.__init__ raised exception (' + str(e) + ')')
 
 	def _setup(self):
 		try:
-			for key in self.config:
+			for key in self.articles:
 				print ("Initializing " + key)
 				self.bridge.display_text("Initializing\n" + str(key))
-				self.scales[key] = Scale(HX711(self.config[key]['dout'],self.config[key]['spd_sck'])) 
-				self.scales[key].setReferenceUnit(self.config[key]['ref'])
-				self.scales[key].setOffset(self.config[key]['offset'])
+				self.scales[key] = Scale(HX711(self.articles[key]['dout'],self.articles[key]['spd_sck'])) 
+				self.scales[key].setReferenceUnit(self.articles[key]['ref'])
+				self.scales[key].setOffset(self.articles[key]['offset'])
 				self.scales[key].reset()
 				self.transactions[key] = { 
 									'weight_new'  : 0.0, 
@@ -195,7 +212,25 @@ class VendingMachine(object):
 			logging.error('Function VendingMachine._setup raised exception (' + str(e) + ')')
 			return False
 	
-	def save_config(self, filename = "articles.json"):
+	def save_articles(self, filename = "articles.json"):
+		try:
+			with open(filename, 'w') as fp:
+				json.dump(self.articles, fp, sort_keys=True, indent=4)
+			return True
+		except Exception as e: 
+			logging.error('Function VendingMachine.save_articles raised exception (' + str(e) + ')')
+			return False
+
+	def load_articles(self, filename = "articles.json"):
+		try:
+			with open(filename, 'r') as fp:
+				self.articles = json.load(fp)
+			return self.articles
+		except Exception as e: 
+			logging.error('Function VendingMachine.save_articles raised exception (' + str(e) + ')')
+			return False
+
+	def save_config(self, filename = "vendingmachine.json"):
 		try:
 			with open(filename, 'w') as fp:
 				json.dump(self.config, fp, sort_keys=True, indent=4)
@@ -204,7 +239,7 @@ class VendingMachine(object):
 			logging.error('Function VendingMachine.save_config raised exception (' + str(e) + ')')
 			return False
 
-	def load_config(self, filename = "articles.json"):
+	def load_config(self, filename = "vendingmachine.json"):
 		try:
 			with open(filename, 'r') as fp:
 				self.config = json.load(fp)
@@ -215,13 +250,13 @@ class VendingMachine(object):
 
 	def calibrate(self, scale_key = None): # if no scale_key is provided, all scales will be calibrated
 		try:
-			#pprint.pprint(self.config)
+			#pprint.pprint(self.articles)
 
 			calibration_weight = 577 # default value
 			answer = input("How heavy is your calibration weight in grams? [" + str(calibration_weight) + "] ")
 			if (answer != ""):
 				calibration_weight = float(answer)
-			for key in self.config:
+			for key in self.articles:
 				if ((scale_key is None) or (key == scale_key)):
 
 					self.scales[key].setReferenceUnit(1)
@@ -237,35 +272,35 @@ class VendingMachine(object):
 					loaded_weight = self.scales[key].getWeight(1)
 					#print ("Loaded weight (uncalibrated): " + str(loaded_weight))
 					
-					self.config[key]['ref'] = (loaded_weight - empty_weight) / calibration_weight
-					#print ("Reference unit: " + str(self.config[key]['ref']))
+					self.articles[key]['ref'] = (loaded_weight - empty_weight) / calibration_weight
+					#print ("Reference unit: " + str(self.articles[key]['ref']))
 
-					self.scales[key].setReferenceUnit(self.config[key]['ref'])
+					self.scales[key].setReferenceUnit(self.articles[key]['ref'])
 
 					input ("EMPTY -> ENTER")
 					print ("taring...")
 					#print (self.scales[key].source.OFFSET)
 					self.scales[key].tare()
-					self.config[key]['offset'] = self.scales[key].source.OFFSET
-					#print (self.config[key]['offset'])
+					self.articles[key]['offset'] = self.scales[key].source.OFFSET
+					#print (self.articles[key]['offset'])
 					
 					#print ("Empty weight (calibrated): " + str(self.scales[key].getWeight(1)))
 					#input ("Put your calibration weight onto the scale and press ENTER to continue.")
 					#print ("\nLoaded weight (calibrated): " + str(self.scales[key].getWeight(1)))
 
 					print (str(key) + " calibrated.")
-					#pprint.pprint(self.config[key])
+					#pprint.pprint(self.articles[key])
 					
-			self.save_config()
+			self.save_articles()
 			
-			return self.config
+			return self.articles
 		except Exception as e: 
 			logging.error('Function VendingMachine.calibrate raised exception (' + str(e) + ')')
 			return False
 			
 	def tare(self):
 		try:
-			for key in self.config:
+			for key in self.articles:
 				print ("Taring " + key)
 				self.scales[key].reset()
 				self.scales[key].tare()
@@ -274,6 +309,30 @@ class VendingMachine(object):
 			logging.error('Function VendingMachine.setup raised exception (' + str(e) + ')')
 			return False
 
+	def open_door(self):
+		try:
+			self.bridge.relay.on()
+			time.sleep(2)
+			self.bridge.relay.off()
+			if (self.door_is_open()):
+				logging.info('Door is open.')
+				return True
+			else:
+				logging.error('Opening door failed.')
+				return False
+		except Exception as e: 
+			logging.error('Function VendingMachine.open_door raised exception (' + str(e) + ')')
+			return False
+
+	def door_is_open(self):
+		try:
+			if (GPIO.input(self.config['pin_door_status']) == GPIO.LOW):
+				return False
+			else:
+				return True
+		except Exception as e: 
+			logging.error('Function VendingMachine.open_door raised exception (' + str(e) + ')')
+			return False
 
 	def run(self):
 		#try:
@@ -299,35 +358,40 @@ class VendingMachine(object):
 						#   (6) create charge in vend
 						
 						# (1) measure weight before opening door
-						for key in self.config:
+						for key in self.articles:
 							weight_old = self.scales[key].getWeight(1)
-							stock_old = max(0,round(weight_old / self.config[key]['weight']))
+							stock_old = max(0,round(weight_old / self.articles[key]['weight']))
 							self.transactions[key] = { 
 														'weight_old' : weight_old,
 														'stock_old'  : stock_old
 													 }
 							#pprint.pprint(self.transactions)
 							
-						# (2) open door - TODO!!!!!!!!!!!!!!
+						# (2) open door
 						self.bridge.display_text("Access granted\n\nPlease\nopen door...")
-						input ("Press ENTER to open the door...")
+						#input ("Press ENTER to open the door...")
+						self.open_door()
 						self.bridge.display_text("Take items and\nclose door to\nfinish shopping")				
 						print ("DOOR OPEN")
-						input ("Take items and press ENTER to close the door...")
-						# (3) wait for door to be closed - TODO!!!!!!!!!!!!!!
+						#input ("Take items and press ENTER to close the door...")
+						
+						# (3) wait for door to be closed
+						while (self.door_is_open()):
+							time.sleep(0.5)
 						print ("DOOR CLOSED")
-						self.bridge.display_text("Proecessing\nyourpurchase...")
+						self.bridge.display_text("Proecessing\nyour purchase...")
+						
 						# (4) measure weight at end of transaction again 
-						for key in self.config:
+						for key in self.articles:
 							weight_new = self.scales[key].getWeight(1)
 							weight_loss = self.transactions[key]['weight_old'] - weight_new
-							items_taken = round(weight_loss/self.config[key]['weight'])
+							items_taken = round(weight_loss/self.articles[key]['weight'])
 							stock_new = self.transactions[key]['stock_old'] - items_taken
 							if (items_taken != 0):
-								print ("Stock change on " + str(key) + ": " + "{:+2d}".format(-items_taken) + " (" + self.config[key]['name'] + ")")  
+								print ("Stock change on " + str(key) + ": " + "{:+2d}".format(-items_taken) + " (" + self.articles[key]['name'] + ")")  
 							if (items_taken > 0):
-								description = str(items_taken) + " x " + self.config[key]['name'] + " á " + "{:.2f}".format(self.config[key]['price'])
-								price = items_taken * self.config[key]['price']
+								description = str(items_taken) + " x " + self.articles[key]['name'] + " á " + "{:.2f}".format(self.articles[key]['price'])
+								price = items_taken * self.articles[key]['price']
 							else:
 								description = "n/a"
 								price = 0.0
@@ -342,9 +406,9 @@ class VendingMachine(object):
 											   } )
 						
 							if (items_taken < 0):
-								self.bridge.send_email("Fabman Vending Machine: Stock Level Increased", "Article:<br>" + str(self.config[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
-							if (items_taken > 0 and self.transactions[key]['stock_new'] <= self.config[key]['stock_min']):
-								self.bridge.send_email("Fabman Vending Machine: Minimum Stock Level Reached", "Article:<br>" + str(self.config[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
+								self.bridge.send_email("Fabman Vending Machine: Stock Level Increased", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
+							if (items_taken > 0 and self.transactions[key]['stock_new'] <= self.articles[key]['stock_min']):
+								self.bridge.send_email("Fabman Vending Machine: Minimum Stock Level Reached", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
 
 						# (5) create charge in fabman
 						self.charge = { 'description' : "n/a", 'price' : 0.0 }
@@ -359,7 +423,7 @@ class VendingMachine(object):
 									self.charge['description'] += " and " + self.transactions[key]['description']
 						pprint.pprint(self.charge)
 						metadata = {
-									'config'       : self.config,
+									'articles'     : self.articles,
 									'transactions' : self.transactions,
 									'charge'       : self.charge
 								   }
@@ -385,7 +449,7 @@ class VendingMachine(object):
 							tax_percent = self.vend.config['tax_percent']
 							for key in self.transactions:
 								if (self.transactions[key]['items_taken'] > 0):
-									self.vend.add_product_to_sale(self.config[key]['product_id'], self.transactions[key]['items_taken'], self.config[key]['price']/(100+tax_percent)*100, self.config[key]['price']/(100+tax_percent)*tax_percent)
+									self.vend.add_product_to_sale(self.articles[key]['product_id'], self.transactions[key]['items_taken'], self.articles[key]['price']/(100+tax_percent)*100, self.articles[key]['price']/(100+tax_percent)*tax_percent)
 							response = self.vend.close_sale()
 							if response.status_code == 200:
 								print("Vend sale posted successfully.")
@@ -398,11 +462,11 @@ class VendingMachine(object):
 						#input("\nPress Enter to continue...")			
 					else:
 						print ("ACCESS DENIED")
+						self.bridge.display_text("Proecessing\nyour purchase...", 3)
 						
 				except (KeyboardInterrupt, SystemExit):
 					GPIO.cleanup()
 					sys.exit()
-
 
 		#except Exception as e: 
 		#	logging.error('Function VendingMachine.run raised exception (' + str(e) + ')')

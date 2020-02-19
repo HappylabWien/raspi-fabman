@@ -30,6 +30,47 @@ from PIL import ImageFont
 
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
 
+class Relay(object):
+
+	def __init__(self, signal_pin = 26, state = 0):
+		try:
+			self.signal_pin = signal_pin
+			self.state = state
+			GPIO.setmode(GPIO.BCM)
+			GPIO.setup(self.signal_pin, GPIO.OUT)
+		except Exception as e: 
+			logging.error('Function Relay.__init__ raised exception (' + str(e) + ')')
+
+	def on(self): 
+		try:
+			GPIO.output(self.signal_pin, 1)
+			self.state = 1
+		except Exception as e: 
+			logging.error('Function Relay.on raised exception (' + str(e) + ')')
+
+	def off(self): 
+		try:
+			GPIO.output(self.signal_pin, 0)
+			self.state = 0
+		except Exception as e: 
+			logging.error('Function Relay.off raised exception (' + str(e) + ')')
+
+	def toggle(self): 
+		try:
+			if (self.state == 0):
+				self.on()
+			else:
+				self.off()
+		except Exception as e: 
+			logging.error('Function Relay.toggle raised exception (' + str(e) + ')')
+
+	def __del__(self):
+		try:
+			self.off()
+			GPIO.cleanup()
+		except Exception as e: 
+			logging.error('Function Relay.__del__ raised exception (' + str(e) + ')')
+
 class Gwiot7941E(object):
 
 	def __init__(self, port = "/dev/ttyS0", baud = 9600):
@@ -40,6 +81,10 @@ class Gwiot7941E(object):
 
 	def read(self): 
 		try:
+			# flush buffers
+			self.ser.flush()
+			self.ser.read(self.ser.inWaiting())
+				
 			while True:
 				nbChars = self.ser.inWaiting()
 				if nbChars > 0:
@@ -47,8 +92,14 @@ class Gwiot7941E(object):
 					data = binascii.b2a_hex(data)
 					data = binascii.unhexlify(data)
 					checksum_7941E = 0
+					no_of_bytes_set = 0 # for ghost key detection
 					for i in range(1, 8):
+						if (data[i] != 0):
+							no_of_bytes_set += 1
 						checksum_7941E ^= data[i]
+					if (no_of_bytes_set <= 1): # if only one byte is set -> discard (assumed to be a ghost key)
+						logging.info('Ghost key discarded (id ' + fabman_key + ')')
+						return False
 					if (checksum_7941E != data[8]):
 						logging.error('RFID read error: wrong checksum')
 						return False
@@ -154,12 +205,13 @@ class FabmanBridge(object):
 			self.config = {
 							"api_url_base"       : "https://fabman.io/api/v1/",
 							"heartbeat_interval" : 30,
-							"stop_button"        : 4,
+							#"stop_button"        : 4,
 							"reader_type"        : "MFRC522",
 							"led_r"              : 17,
 							"led_g"              : 27,
 							"led_b"              : 22,
-							"display"            : "SSD1306_128_32"
+							"display"            : "SSD1306_128_32",
+							"relay"              : 26
 						  }
 
 			if (config is None):
@@ -171,6 +223,7 @@ class FabmanBridge(object):
 			self.session_id = None
 			self.next_heartbeat_call = time.time()
 			self.rgbled = RGBLED(self.config["led_r"], self.config["led_g"], self.config["led_b"])
+			self.relay = Relay(self.config["relay"],0)
 			GPIO.setwarnings(False)
 			
 			if (self.config["reader_type"] == "MFRC522"):
@@ -184,7 +237,7 @@ class FabmanBridge(object):
 				self.chip_type = "em4102"
 			if (self.config["heartbeat_interval"] > 0):
 				self._start_heartbeat_thread()
-			if (not(self.config["stop_button"] is None)):
+			if ("stop_button" in self.config and not(self.config["stop_button"] is None)):
 				GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)  
 				GPIO.setup(self.config["stop_button"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 				GPIO.add_event_detect(self.config["stop_button"], GPIO.FALLING, callback=self._callback_stop_button, bouncetime=300)
@@ -223,14 +276,12 @@ class FabmanBridge(object):
 			response = requests.post(api_url, headers=self.api_header, json=data)
 			if (response.status_code == 200 and json.loads(response.content.decode('utf-8'))['type'] == "allowed"):
 				logging.info('Bridge started successfully.')
-				#self.rgbled.on("g")
 				self.rgbled.color = Color('green')
-				logging.debug('Press button to switch off.')
 				self.session_id = json.loads(response.content.decode('utf-8'))["sessionId"]
 				return True
 			else:
 				logging.warning('Bridge could not be started (user_id: ' + str(user_id) + ')')
-				self.display_error("Access\ndenied")
+				#self.display_error("Access\ndenied")
 				return False
 		except Exception as e: 
 			logging.error('Function FabmanBridge.access raised exception (' + str(e) + ')')
@@ -499,7 +550,8 @@ class FabmanBridge(object):
 
 	def _callback_stop_button(self, channel):
 		try:
-			
+			#print("self.config[stop_button] = " + str(self.config["stop_button"]))
+			#print("channel = " + str(channel))
 			if (self.config["stop_button"] == channel and self.is_on()):
 				logging.debug("Switching off ...")
 				self.stop()
@@ -522,7 +574,7 @@ class FabmanBridge(object):
 					logging.debug("Ready to read nfc key ...")
 					key = self.read_key()
 					if (key != False and key is not None):
-						self.access()
+						self.access(key)
 		except Exception as e: 
 			logging.error('Function FabmanBridge.run raised exception (' + str(e) + ')')
 			return False

@@ -16,4 +16,6 @@ vend = None
 #vend = Vend() # uncomment this to active vend sync (configure in vend.json)
 
 vending_machine = VendingMachine(bridge, vend) # read config from "articles.json"
+
+#print(vending_machine.open_door())
 vending_machine.run()
