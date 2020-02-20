@@ -94,11 +94,13 @@ class Gwiot7941E(object):
 					checksum_7941E = 0
 					no_of_bytes_set = 0 # for ghost key detection
 					for i in range(1, 8):
-						if (data[i] != 0):
+						#print ("check byte i: " + str(int(data[i])))
+						if (i > 3 and int(data[i]) != 0):
 							no_of_bytes_set += 1
+							#print ("byte " + str(i) + " = " + str(int(data[i])) + " => no_of_bytes_set increased to " + str(no_of_bytes_set))
 						checksum_7941E ^= data[i]
 					if (no_of_bytes_set <= 1): # if only one byte is set -> discard (assumed to be a ghost key)
-						logging.info('Ghost key discarded (id ' + fabman_key + ')')
+						logging.info('Ghost key discarded: ' + str(data))
 						return False
 					if (checksum_7941E != data[8]):
 						logging.error('RFID read error: wrong checksum')
@@ -106,6 +108,8 @@ class Gwiot7941E(object):
 					checksum_ID12 = 0
 					for i in range(3, 8):
 						checksum_ID12 ^= data[i]
+					#print ("Length of data: " + str(len(data)))
+					#pprint.pprint(data)
 					fabman_key = format(data[3],"x").zfill(2) + format(data[4],"x").zfill(2) + format(data[5],"x").zfill(2) + format(data[6],"x").zfill(2) + format(data[7],"x").zfill(2) + format(checksum_ID12,"x")
 					logging.info('Successfully read RFID key ' + fabman_key)
 					return fabman_key
@@ -268,21 +272,24 @@ class FabmanBridge(object):
 
 	def access(self, user_id):# user_id can be email address or rfid key 
 		try:
-			if ("@" in str(user_id)): # authenticate with email address
-				data = { 'emailAddress': user_id, 'configVersion': 0 }
-			else: # authenticate with rfid key 
-				data = { "keys": [ { "type": self.chip_type, "token": user_id } ], "configVersion": 0 }
-			api_url = '{0}bridge/access'.format(self.config["api_url_base"])
-			response = requests.post(api_url, headers=self.api_header, json=data)
-			if (response.status_code == 200 and json.loads(response.content.decode('utf-8'))['type'] == "allowed"):
-				logging.info('Bridge started successfully.')
-				self.rgbled.color = Color('green')
-				self.session_id = json.loads(response.content.decode('utf-8'))["sessionId"]
-				return True
+			if (user_id):
+				if ("@" in str(user_id)): # authenticate with email address
+					data = { 'emailAddress': user_id, 'configVersion': 0 }
+				else: # authenticate with rfid key 
+					data = { "keys": [ { "type": self.chip_type, "token": user_id } ], "configVersion": 0 }
+				api_url = '{0}bridge/access'.format(self.config["api_url_base"])
+				response = requests.post(api_url, headers=self.api_header, json=data)
+				if (response.status_code == 200 and json.loads(response.content.decode('utf-8'))['type'] == "allowed"):
+					logging.info('Bridge started successfully.')
+					self.rgbled.color = Color('green')
+					self.session_id = json.loads(response.content.decode('utf-8'))["sessionId"]
+					return True
+				else:
+					logging.warning('Bridge could not be started (user_id: ' + str(user_id) + ')')
+					#self.display_error("Access\ndenied")
+					return False
 			else:
-				logging.warning('Bridge could not be started (user_id: ' + str(user_id) + ')')
-				#self.display_error("Access\ndenied")
-				return False
+				logging.warning("No user_id set for /bridge/access")
 		except Exception as e: 
 			logging.error('Function FabmanBridge.access raised exception (' + str(e) + ')')
 			return False

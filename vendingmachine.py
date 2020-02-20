@@ -345,125 +345,129 @@ class VendingMachine(object):
 					
 					print ("READY FOR TRANSACTION - SHOW CARD")
 					self.bridge.display_text("Swipe your\nmember card\nto start\nshopping...")
-					if (self.bridge.access(self.bridge.read_key())): # wait for key card
-						print ("ACCESS GRANTED")
-						# access granted
-						
-						# Procedure: 
-						#   (1) measure weight before opening door
-						#   (2) open door
-						#   (3) wait for door to be closed
-						#   (4) measure weight at end of transaction again 
-						#   (5) create charge in fabman
-						#   (6) create charge in vend
-						
-						# (1) measure weight before opening door
-						for key in self.articles:
-							weight_old = self.scales[key].getWeight(1)
-							stock_old = max(0,round(weight_old / self.articles[key]['weight']))
-							self.transactions[key] = { 
-														'weight_old' : weight_old,
-														'stock_old'  : stock_old
-													 }
-							#pprint.pprint(self.transactions)
+					key_id = self.bridge.read_key()
+					if (key_id): # avoid processing ghost keys
+						if (self.bridge.access(key_id)): # wait for key card
+							print ("ACCESS GRANTED")
+							# access granted
 							
-						# (2) open door
-						self.bridge.display_text("Access granted\n\nPlease\nopen door...")
-						#input ("Press ENTER to open the door...")
-						self.open_door()
-						self.bridge.display_text("Take items and\nclose door to\nfinish shopping")				
-						print ("DOOR OPEN")
-						#input ("Take items and press ENTER to close the door...")
-						
-						# (3) wait for door to be closed
-						while (self.door_is_open()):
-							time.sleep(0.5)
-						print ("DOOR CLOSED")
-						self.bridge.display_text("Proecessing\nyour purchase...")
-						
-						# (4) measure weight at end of transaction again 
-						for key in self.articles:
-							weight_new = self.scales[key].getWeight(1)
-							weight_loss = self.transactions[key]['weight_old'] - weight_new
-							items_taken = round(weight_loss/self.articles[key]['weight'])
-							stock_new = self.transactions[key]['stock_old'] - items_taken
-							if (items_taken != 0):
-								print ("Stock change on " + str(key) + ": " + "{:+2d}".format(-items_taken) + " (" + self.articles[key]['name'] + ")")  
-							if (items_taken > 0):
-								description = str(items_taken) + " x " + self.articles[key]['name'] + " á " + "{:.2f}".format(self.articles[key]['price'])
-								price = items_taken * self.articles[key]['price']
-							else:
-								description = "n/a"
-								price = 0.0
-									
-							self.transactions[key].update( { 
-												'weight_new'  : weight_new, 
-												'stock_new'   : stock_new,
-												'weight_loss' : weight_loss, 
-												'items_taken' : items_taken, 
-												'description' : description, 
-												'price'       : price 
-											   } )
-						
-							if (items_taken < 0):
-								self.bridge.send_email("Fabman Vending Machine: Stock Level Increased", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
-							if (items_taken > 0 and self.transactions[key]['stock_new'] <= self.articles[key]['stock_min']):
-								self.bridge.send_email("Fabman Vending Machine: Minimum Stock Level Reached", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
-
-						# (5) create charge in fabman
-						self.charge = { 'description' : "n/a", 'price' : 0.0 }
-						items_charged = 0
-						for key in self.transactions:
-							if (self.transactions[key]['items_taken'] > 0):
-								items_charged += self.transactions[key]['items_taken']
-								self.charge['price'] += self.transactions[key]['price']
-								if (self.charge['description'] == "n/a"):
-									self.charge['description'] = str(self.transactions[key]['description'])
+							# Procedure: 
+							#   (1) measure weight before opening door
+							#   (2) open door
+							#   (3) wait for door to be closed
+							#   (4) measure weight at end of transaction again 
+							#   (5) create charge in fabman
+							#   (6) create charge in vend
+							
+							# (1) measure weight before opening door
+							for key in self.articles:
+								weight_old = self.scales[key].getWeight(1)
+								stock_old = max(0,round(weight_old / self.articles[key]['weight']))
+								self.transactions[key] = { 
+															'weight_old' : weight_old,
+															'stock_old'  : stock_old
+														 }
+								#pprint.pprint(self.transactions)
+								
+							# (2) open door
+							self.bridge.display_text("Access granted\n\nPlease\nopen door...")
+							#input ("Press ENTER to open the door...")
+							self.open_door()
+							self.bridge.display_text("Take items and\nclose door to\nfinish shopping")				
+							print ("DOOR OPEN")
+							#input ("Take items and press ENTER to close the door...")
+							
+							# (3) wait for door to be closed
+							while (self.door_is_open()):
+								time.sleep(0.5)
+							print ("DOOR CLOSED")
+							self.bridge.display_text("Proecessing\nyour purchase...")
+							
+							# (4) measure weight at end of transaction again 
+							for key in self.articles:
+								weight_new = self.scales[key].getWeight(1)
+								weight_loss = self.transactions[key]['weight_old'] - weight_new
+								items_taken = round(weight_loss/self.articles[key]['weight'])
+								stock_new = self.transactions[key]['stock_old'] - items_taken
+								if (items_taken != 0):
+									print ("Stock change on " + str(key) + ": " + "{:+2d}".format(-items_taken) + " (" + self.articles[key]['name'] + ")")  
+								if (items_taken > 0):
+									description = str(items_taken) + " x " + self.articles[key]['name'] + " á " + "{:.2f}".format(self.articles[key]['price'])
+									price = items_taken * self.articles[key]['price']
 								else:
-									self.charge['description'] += " and " + self.transactions[key]['description']
-						pprint.pprint(self.charge)
-						metadata = {
-									'articles'     : self.articles,
-									'transactions' : self.transactions,
-									'charge'       : self.charge
-								   }
-						
-						#print ("----------------")
-						#pprint.pprint (self.transactions)
-						#pprint.pprint (metadata)
-						#print ("----------------")
+									description = "n/a"
+									price = 0.0
+										
+								self.transactions[key].update( { 
+													'weight_new'  : weight_new, 
+													'stock_new'   : stock_new,
+													'weight_loss' : weight_loss, 
+													'items_taken' : items_taken, 
+													'description' : description, 
+													'price'       : price 
+												   } )
+							
+								if (items_taken < 0):
+									self.bridge.send_email("Fabman Vending Machine: Stock Level Increased", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
+								if (items_taken > 0 and self.transactions[key]['stock_new'] <= self.articles[key]['stock_min']):
+									self.bridge.send_email("Fabman Vending Machine: Minimum Stock Level Reached", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
 
-						self.bridge.stop(metadata, self.charge) 
-						
-						# show transaction summary on display
-						if (items_charged == 1):
-							text = "1 item taken"
-						else:
-							text = str(items_charged) + " items taken"
-						text += "\nEUR {:.2f}".format(self.charge['price']) + " charged\n\nTHANK YOU!"
-						self.bridge.display_text(text, 5)
-						
-						# (6) create charge in vend
-						if (self.vend is not None):
-							self.vend.start_sale()
-							tax_percent = self.vend.config['tax_percent']
+							# (5) create charge in fabman
+							self.charge = { 'description' : "n/a", 'price' : 0.0 }
+							items_charged = 0
 							for key in self.transactions:
 								if (self.transactions[key]['items_taken'] > 0):
-									self.vend.add_product_to_sale(self.articles[key]['product_id'], self.transactions[key]['items_taken'], self.articles[key]['price']/(100+tax_percent)*100, self.articles[key]['price']/(100+tax_percent)*tax_percent)
-							response = self.vend.close_sale()
-							if response.status_code == 200:
-								print("Vend sale posted successfully.")
-								response = json.loads(response.content.decode('utf-8'))
-								pprint.pprint(response)
+									items_charged += self.transactions[key]['items_taken']
+									self.charge['price'] += self.transactions[key]['price']
+									if (self.charge['description'] == "n/a"):
+										self.charge['description'] = str(self.transactions[key]['description'])
+									else:
+										self.charge['description'] += " and " + self.transactions[key]['description']
+							pprint.pprint(self.charge)
+							metadata = {
+										'articles'     : self.articles,
+										'transactions' : self.transactions,
+										'charge'       : self.charge
+									   }
+							
+							#print ("----------------")
+							#pprint.pprint (self.transactions)
+							#pprint.pprint (metadata)
+							#print ("----------------")
+
+							self.bridge.stop(metadata, self.charge) 
+							
+							# show transaction summary on display
+							if (items_charged == 1):
+								text = "1 item taken"
 							else:
-								print("Vend sale FAILED.")
-								pprint.pprint(response)
-						
-						#input("\nPress Enter to continue...")			
-					else:
-						print ("ACCESS DENIED")
-						self.bridge.display_text("Proecessing\nyour purchase...", 3)
-						
+								text = str(items_charged) + " items taken"
+							text += "\nEUR {:.2f}".format(self.charge['price']) + " charged\n\nTHANK YOU!"
+							self.bridge.display_text(text, 5)
+							
+							# (6) create charge in vend
+							if (self.vend is not None):
+								self.vend.start_sale()
+								tax_percent = self.vend.config['tax_percent']
+								for key in self.transactions:
+									if (self.transactions[key]['items_taken'] > 0):
+										self.vend.add_product_to_sale(self.articles[key]['product_id'], self.transactions[key]['items_taken'], self.articles[key]['price']/(100+tax_percent)*100, self.articles[key]['price']/(100+tax_percent)*tax_percent)
+								response = self.vend.close_sale()
+								if response.status_code == 200:
+									print("Vend sale posted successfully.")
+									response = json.loads(response.content.decode('utf-8'))
+									pprint.pprint(response)
+								else:
+									print("Vend sale FAILED.")
+									pprint.pprint(response)
+							
+							#input("\nPress Enter to continue...")			
+						else:
+							print ("ACCESS DENIED")
+							self.bridge.display_text("Access\ndenied", 3)
+							#self.bridge.display_text("Proecessing\nyour purchase...", 3)
+					#else:
+					#	print ("Ghost key detected -> discard")
 				except (KeyboardInterrupt, SystemExit):
 					GPIO.cleanup()
 					sys.exit()
