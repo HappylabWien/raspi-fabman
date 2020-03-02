@@ -295,6 +295,23 @@ class VendingMachine(object):
 			GPIO.setup(self.config['pin_door_status'], GPIO.IN, GPIO.PUD_UP)
 
 			self._setup()
+			
+			# initialize stock values
+			for key in self.articles:
+			
+				self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
+			
+				weight_old = self.scales[key].getWeight(1)
+				print ("weight_old = " + str(weight_old))
+				
+				stock_old = max(0,round(weight_old / self.articles[key]['weight']))
+				self.transactions[key] = { 
+											'weight_old' : weight_old,
+											'stock_old'  : stock_old
+										 }
+			
+			#pprint.pprint(self.transactions)
+			#input("initial stock values set ... weiter -> ENTER")
 
 		except Exception as e: 
 			logging.error('Function VendingMachine.__init__ raised exception (' + str(e) + ')')
@@ -470,13 +487,15 @@ class VendingMachine(object):
 							# access granted
 							
 							# Procedure: 
-							#   (1) measure weight before opening door
+							#   (1) measure initial stock values at startup (see __init__)
 							#   (2) open door
 							#   (3) wait for door to be closed
 							#   (4) measure weight at end of transaction again 
 							#   (5) create charge in fabman
 							#   (6) create charge in vend
+							#   (7) save new stock values for next transaction
 							
+							'''
 							# (1) measure weight before opening door
 							for key in self.articles:
 							
@@ -490,8 +509,10 @@ class VendingMachine(object):
 															'weight_old' : weight_old,
 															'stock_old'  : stock_old
 														 }
-								#pprint.pprint(self.transactions)
-								
+							'''
+							pprint.pprint(self.transactions)
+							input("weiter...-> ENTER")
+							
 							# (2) open door
 							self.bridge.display_text("Access granted\n\nPlease\nopen door...")
 							#input ("Press ENTER to open the door...")
@@ -540,6 +561,8 @@ class VendingMachine(object):
 								if (items_taken > 0 and self.transactions[key]['stock_new'] <= self.articles[key]['stock_min']):
 									self.bridge.send_email("Fabman Vending Machine: Minimum Stock Level Reached", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
 
+							pprint.pprint(self.transactions)
+							
 							# (5) create charge in fabman
 							self.charge = { 'description' : "n/a", 'price' : 0.0 }
 							items_charged = 0
@@ -590,6 +613,14 @@ class VendingMachine(object):
 									pprint.pprint(response)
 							
 							#input("\nPress Enter to continue...")			
+							
+							# (7) save new stock values for next transaction
+							for key in self.articles:
+								self.transactions[key] = { 
+															'weight_old' : self.transactions[key]['weight_new'],
+															'stock_old'  : self.transactions[key]['stock_new']
+														 }
+							
 						else:
 							print ("ACCESS DENIED")
 							self.bridge.display_text("Access\ndenied", 3)
@@ -605,51 +636,3 @@ class VendingMachine(object):
 		#	return False
 
 		
-'''		
-from raspifabman import FabmanBridge
-from vendingmachine import VendingMachine
-from vendingmachine import Vend
-import sys # because api token is read from command line
-import datetime
-
-config = { # change default settings
-	"api_url_base"       : "https://internal.fabman.io/api/v1/", # api url base / for production systems remove "internal."
-	"heartbeat_interval" : 30
-}
-#bridge = FabmanBridge(sys.argv[1], config)
-bridge = FabmanBridge() # read config from "fabman.json"
-
-vend = None
-#vend = Vend() # uncomment this to active vend sync (configure in vend.json)
-
-vending_machine = VendingMachine(bridge, vend) # read config from "articles.json"
-
-#print(vending_machine.open_door())
-#vending_machine.run()
-
-pprint.pprint(vending_machine.pe[32])
-
-#	# 1kg load cell
-#	vending_machine.pe[32].select_channel(0)
-#	weight = vending_machine.scales['Scale 0'].getWeight(1)
-#	print("weight scale 0: " + "{:.2f}".format(weight) + " g")
-
-# 5kg load cell
-vending_machine.pe[32].select_channel(1)
-weight = vending_machine.scales['Scale 1'].getWeight(1)
-print("weight scale 1: " + "{:.2f}".format(weight) + " g")
-'''
-'''
-while (True):
-	print ("\n***" + str(datetime.datetime.now()) + "***")
-
-	# 1kg load cell
-	vending_machine.pe[32].select_channel(0)
-	weight = vending_machine.scales['Scale 0'].getWeight(1)
-	print("weight scale 0: " + "{:.2f}".format(weight) + " g")
-
-	# 5kg load cell
-	vending_machine.pe[32].select_channel(1)
-	weight = vending_machine.scales['Scale 1'].getWeight(1)
-	print("weight scale 1: " + "{:.2f}".format(weight) + " g")
-'''
