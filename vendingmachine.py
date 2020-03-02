@@ -11,7 +11,116 @@ import requests
 from scale import Scale
 from hx711 import HX711
 
+# for port expander and mux
+import board
+import busio
+from adafruit_mcp230xx.mcp23017 import MCP23017
+
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
+
+class Scale_PE_MUX(object): # combination of port expander and two multiplexers for multiple hx711 scales
+
+	def __init__(self, i2c_addr = 0x20, channel = 0):	
+	
+		self.channel = channel
+		self.i2c_addr = i2c_addr
+				
+		# initialize port expander
+		i2c = busio.I2C(board.SCL, board.SDA)
+		self.mcp = MCP23017(i2c, address=self.i2c_addr)
+		
+		# DT - yellow (input)
+		self.pin_dt_s0 = self.mcp.get_pin(8)
+		self.pin_dt_s1 = self.mcp.get_pin(9)
+		self.pin_dt_s2 = self.mcp.get_pin(10)
+		self.pin_dt_s3 = self.mcp.get_pin(11)
+		self.pin_dt_en = self.mcp.get_pin(12)
+		
+		self.pin_dt_en.switch_to_output(value=True)
+		self.pin_dt_s0.switch_to_output(value=True)
+		self.pin_dt_s1.switch_to_output(value=True)
+		self.pin_dt_s2.switch_to_output(value=True)
+		self.pin_dt_s3.switch_to_output(value=True)
+
+		# SCK - orange (output)
+		self.pin_sck_s0 = self.mcp.get_pin(0)
+		self.pin_sck_s1 = self.mcp.get_pin(1)
+		self.pin_sck_s2 = self.mcp.get_pin(2)
+		self.pin_sck_s3 = self.mcp.get_pin(3)
+		self.pin_sck_en = self.mcp.get_pin(4)
+		
+		self.pin_sck_en.switch_to_output(value=True)
+		self.pin_sck_s0.switch_to_output(value=True)
+		self.pin_sck_s1.switch_to_output(value=True)
+		self.pin_sck_s2.switch_to_output(value=True)
+		self.pin_sck_s3.switch_to_output(value=True)
+		
+		self.select_channel(self.channel)
+		
+	def select_channel(self, channel):
+		self.channel = channel
+
+		#print ("Set channel to " + str(channel))
+		
+		# disable MUXs
+		self.pin_sck_en.value = True
+		self.pin_dt_en.value = True
+
+		# select channel
+		if (channel == 0):
+			print ("Set channel to 0")
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 0, 0, 0)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 0, 0, 0)
+		elif (channel == 1):
+			print ("Set channel to 1")
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 0, 0, 1)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 0, 0, 1)
+		elif (channel == 2):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 0, 1, 0)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 0, 1, 0)
+		elif (channel == 3):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 0, 1, 1)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 0, 1, 1)
+		elif (channel == 4):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 1, 0, 0)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 1, 0, 0)
+		elif (channel == 5):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 1, 0, 1)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 1, 0, 1)
+		elif (channel == 6):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 1, 1, 0)
+			(self.pin_dt_s3.value, self.self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 1, 1, 0)
+		elif (channel == 7):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 1, 1, 1)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 1, 1, 1)
+		elif (channel == 8):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (1, 0, 0, 0)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 0, 0, 0)
+		elif (channel == 9):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (1, 0, 0, 1)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 0, 0, 1)
+		elif (channel == 10):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (1, 0, 1, 0)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 0, 1, 0)
+		elif (channel == 11):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (1, 0, 1, 1)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 0, 1, 1)
+		elif (channel == 12):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (1, 1, 0, 0)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 1, 0, 0)
+		elif (channel == 13):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (1, 1, 0, 1)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 1, 0, 1)
+		elif (channel == 14):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (1, 1, 1, 0)
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 1, 1, 0)
+		elif (channel == 15):
+			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (1, 1, 1, 1)	
+			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 1, 1, 1)	
+
+		# enable MUXs
+		self.pin_sck_en.value = False
+		self.pin_dt_en.value = False
 
 class Vend(object):
 
@@ -153,6 +262,7 @@ class VendingMachine(object):
 		try:
 			self.bridge = bridge
 			self.vend = vend
+			self.pe = {}
 			
 			# load article settings
 			if (articles is None):
@@ -169,7 +279,6 @@ class VendingMachine(object):
 			self.scales = {}
 			self.transactions = {}
 			self.charge = { 'description' : "n/a", 'price' : 0.0 }
-			self._setup()
 			#pprint.pprint(self.articles)
 			
 			# load config
@@ -185,6 +294,8 @@ class VendingMachine(object):
 			GPIO.setmode(GPIO.BCM)
 			GPIO.setup(self.config['pin_door_status'], GPIO.IN, GPIO.PUD_UP)
 
+			self._setup()
+
 		except Exception as e: 
 			logging.error('Function VendingMachine.__init__ raised exception (' + str(e) + ')')
 
@@ -192,6 +303,10 @@ class VendingMachine(object):
 		try:
 			for key in self.articles:
 				print ("Initializing " + key)
+
+				self.pe.update( { self.articles[key]['pe_i2c_addr'] : Scale_PE_MUX(int(self.articles[key]['pe_i2c_addr']), int(self.articles[key]['mux_channel'])) } )
+				#self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
+
 				self.bridge.display_text("Initializing\n" + str(key))
 				self.scales[key] = Scale(HX711(self.articles[key]['dout'],self.articles[key]['spd_sck'])) 
 				self.scales[key].setReferenceUnit(self.articles[key]['ref'])
@@ -258,6 +373,9 @@ class VendingMachine(object):
 				calibration_weight = float(answer)
 			for key in self.articles:
 				if ((scale_key is None) or (key == scale_key)):
+				
+					#self.pe.select_channel(self.articles[key]['mux_channel'])
+					self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
 
 					self.scales[key].setReferenceUnit(1)
 
@@ -361,7 +479,12 @@ class VendingMachine(object):
 							
 							# (1) measure weight before opening door
 							for key in self.articles:
+							
+								self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
+							
 								weight_old = self.scales[key].getWeight(1)
+								print ("weight_old = " + str(weight_old))
+								
 								stock_old = max(0,round(weight_old / self.articles[key]['weight']))
 								self.transactions[key] = { 
 															'weight_old' : weight_old,
@@ -385,7 +508,12 @@ class VendingMachine(object):
 							
 							# (4) measure weight at end of transaction again 
 							for key in self.articles:
+							
+								self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
+								
 								weight_new = self.scales[key].getWeight(1)
+								print ("weight_new = " + str(weight_new))
+
 								weight_loss = self.transactions[key]['weight_old'] - weight_new
 								items_taken = round(weight_loss/self.articles[key]['weight'])
 								stock_new = self.transactions[key]['stock_old'] - items_taken
@@ -476,3 +604,52 @@ class VendingMachine(object):
 		#	logging.error('Function VendingMachine.run raised exception (' + str(e) + ')')
 		#	return False
 
+		
+'''		
+from raspifabman import FabmanBridge
+from vendingmachine import VendingMachine
+from vendingmachine import Vend
+import sys # because api token is read from command line
+import datetime
+
+config = { # change default settings
+	"api_url_base"       : "https://internal.fabman.io/api/v1/", # api url base / for production systems remove "internal."
+	"heartbeat_interval" : 30
+}
+#bridge = FabmanBridge(sys.argv[1], config)
+bridge = FabmanBridge() # read config from "fabman.json"
+
+vend = None
+#vend = Vend() # uncomment this to active vend sync (configure in vend.json)
+
+vending_machine = VendingMachine(bridge, vend) # read config from "articles.json"
+
+#print(vending_machine.open_door())
+#vending_machine.run()
+
+pprint.pprint(vending_machine.pe[32])
+
+#	# 1kg load cell
+#	vending_machine.pe[32].select_channel(0)
+#	weight = vending_machine.scales['Scale 0'].getWeight(1)
+#	print("weight scale 0: " + "{:.2f}".format(weight) + " g")
+
+# 5kg load cell
+vending_machine.pe[32].select_channel(1)
+weight = vending_machine.scales['Scale 1'].getWeight(1)
+print("weight scale 1: " + "{:.2f}".format(weight) + " g")
+'''
+'''
+while (True):
+	print ("\n***" + str(datetime.datetime.now()) + "***")
+
+	# 1kg load cell
+	vending_machine.pe[32].select_channel(0)
+	weight = vending_machine.scales['Scale 0'].getWeight(1)
+	print("weight scale 0: " + "{:.2f}".format(weight) + " g")
+
+	# 5kg load cell
+	vending_machine.pe[32].select_channel(1)
+	weight = vending_machine.scales['Scale 1'].getWeight(1)
+	print("weight scale 1: " + "{:.2f}".format(weight) + " g")
+'''

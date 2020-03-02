@@ -1,22 +1,28 @@
 {
-    "Scale 1": {
+    "Scale 0": {
         "dout": 5,
+        "mux_channel": 0,
         "name": "B\u00fcroklammer",
-        "offset": 230654.73333333334,
+        "offset": 233703.86666666667,
+        "pe_i2c_addr": 32,
         "price": 1,
         "product_id": "2620647f-85b7-6e07-8505-33fe822c2266",
-        "ref": 2077.6802426343156,
+        "ref": 2073.071057192374,
         "spd_sck": 6,
+        "stock_min": 0,
         "weight": 0.39
     },
-    "Scale 2": {
-        "dout": 23,
+    "Scale 1": {
+        "dout": 5,
+        "mux_channel": 1,
         "name": "Bohrer 2mm",
-        "offset": 95115,
+        "offset": 94780,
+        "pe_i2c_addr": 32,
         "price": 19.9,
         "product_id": "2620647f-85b7-6e07-8505-33fe822c2266",
-        "ref": 399.5814558058926,
-        "spd_sck": 24,
+        "ref": 398.07019064124785,
+        "spd_sck": 6,
+        "stock_min": 0,
         "weight": 23.39
     }
 }
