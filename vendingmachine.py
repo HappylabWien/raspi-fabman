@@ -55,6 +55,7 @@ class Scale_PE_MUX(object): # combination of port expander and two multiplexers 
 		self.pin_sck_s2.switch_to_output(value=True)
 		self.pin_sck_s3.switch_to_output(value=True)
 		
+		self.disable()
 		self.select_channel(self.channel)
 		
 	def select_channel(self, channel):
@@ -63,16 +64,16 @@ class Scale_PE_MUX(object): # combination of port expander and two multiplexers 
 		#print ("Set channel to " + str(channel))
 		
 		# disable MUXs
-		self.pin_sck_en.value = True
-		self.pin_dt_en.value = True
+		#self.pin_sck_en.value = True
+		#self.pin_dt_en.value = True
 
 		# select channel
 		if (channel == 0):
-			print ("Set channel to 0")
+			#print ("Set channel to 0")
 			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 0, 0, 0)
 			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 0, 0, 0)
 		elif (channel == 1):
-			print ("Set channel to 1")
+			#print ("Set channel to 1")
 			(self.pin_sck_s3.value, self.pin_sck_s2.value, self.pin_sck_s1.value, self.pin_sck_s0.value) = (0, 0, 0, 1)
 			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (0, 0, 0, 1)
 		elif (channel == 2):
@@ -119,9 +120,19 @@ class Scale_PE_MUX(object): # combination of port expander and two multiplexers 
 			(self.pin_dt_s3.value, self.pin_dt_s2.value, self.pin_dt_s1.value, self.pin_dt_s0.value) = (1, 1, 1, 1)	
 
 		# enable MUXs
+		#self.pin_sck_en.value = False
+		#self.pin_dt_en.value = False
+
+	def disable(self):
+		# disable MUXs
+		self.pin_sck_en.value = True
+		self.pin_dt_en.value = True
+		
+	def enable(self):
+		# enable MUXs
 		self.pin_sck_en.value = False
 		self.pin_dt_en.value = False
-
+		
 class Vend(object):
 
 	def __init__(self, config = None): # if no config is given read config from "vend.json"
@@ -300,6 +311,7 @@ class VendingMachine(object):
 			for key in self.articles:
 			
 				self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
+				self.pe[self.articles[key]['pe_i2c_addr']].enable()
 			
 				weight_old = self.scales[key].getWeight(1)
 				print ("weight_old = " + str(weight_old))
@@ -309,7 +321,7 @@ class VendingMachine(object):
 											'weight_old' : weight_old,
 											'stock_old'  : stock_old
 										 }
-			
+				self.pe[self.articles[key]['pe_i2c_addr']].disable()
 			#pprint.pprint(self.transactions)
 			#input("initial stock values set ... weiter -> ENTER")
 
@@ -320,10 +332,13 @@ class VendingMachine(object):
 		try:
 			for key in self.articles:
 				print ("Initializing " + key)
-
+				
 				self.pe.update( { self.articles[key]['pe_i2c_addr'] : Scale_PE_MUX(int(self.articles[key]['pe_i2c_addr']), int(self.articles[key]['mux_channel'])) } )
 				#self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
 
+				self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
+				self.pe[self.articles[key]['pe_i2c_addr']].enable()
+				
 				self.bridge.display_text("Initializing\n" + str(key))
 				self.scales[key] = Scale(HX711(self.articles[key]['dout'],self.articles[key]['spd_sck'])) 
 				self.scales[key].setReferenceUnit(self.articles[key]['ref'])
@@ -339,6 +354,9 @@ class VendingMachine(object):
 									'description' : "n/a", 
 									'price'       : 0.0 
 								   }
+								   
+				self.pe[self.articles[key]['pe_i2c_addr']].enable()
+
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine._setup raised exception (' + str(e) + ')')
@@ -393,7 +411,8 @@ class VendingMachine(object):
 				
 					#self.pe.select_channel(self.articles[key]['mux_channel'])
 					self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
-
+					self.pe[self.articles[key]['pe_i2c_addr']].enable()
+					
 					self.scales[key].setReferenceUnit(1)
 
 					print ("\nCalibrating " + key)
@@ -425,6 +444,7 @@ class VendingMachine(object):
 
 					print (str(key) + " calibrated.")
 					#pprint.pprint(self.articles[key])
+					self.pe[self.articles[key]['pe_i2c_addr']].disable()
 					
 			self.save_articles()
 			
@@ -500,7 +520,7 @@ class VendingMachine(object):
 							for key in self.articles:
 							
 								self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
-							
+								self.pe[self.articles[key]['pe_i2c_addr']].enable()
 								weight_old = self.scales[key].getWeight(1)
 								print ("weight_old = " + str(weight_old))
 								
@@ -509,9 +529,10 @@ class VendingMachine(object):
 															'weight_old' : weight_old,
 															'stock_old'  : stock_old
 														 }
+								self.pe[self.articles[key]['pe_i2c_addr']].disable()
 							'''
-							pprint.pprint(self.transactions)
-							input("weiter...-> ENTER")
+							#pprint.pprint(self.transactions)
+							#input("weiter...-> ENTER")
 							
 							# (2) open door
 							self.bridge.display_text("Access granted\n\nPlease\nopen door...")
@@ -529,11 +550,14 @@ class VendingMachine(object):
 							
 							# (4) measure weight at end of transaction again 
 							for key in self.articles:
+								#print("Checking Scale " + str(key) + "...")
+								#self.bridge.display_text("Checking\n" + str(key) + "...")		
 							
 								self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
+								self.pe[self.articles[key]['pe_i2c_addr']].enable()
 								
 								weight_new = self.scales[key].getWeight(1)
-								print ("weight_new = " + str(weight_new))
+								#print ("weight_new = " + str(weight_new))
 
 								weight_loss = self.transactions[key]['weight_old'] - weight_new
 								items_taken = round(weight_loss/self.articles[key]['weight'])
@@ -560,8 +584,10 @@ class VendingMachine(object):
 									self.bridge.send_email("Fabman Vending Machine: Stock Level Increased", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
 								if (items_taken > 0 and self.transactions[key]['stock_new'] <= self.articles[key]['stock_min']):
 									self.bridge.send_email("Fabman Vending Machine: Minimum Stock Level Reached", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
-
-							pprint.pprint(self.transactions)
+								
+								self.pe[self.articles[key]['pe_i2c_addr']].disable()
+								
+							#pprint.pprint(self.transactions)
 							
 							# (5) create charge in fabman
 							self.charge = { 'description' : "n/a", 'price' : 0.0 }
