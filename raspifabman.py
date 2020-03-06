@@ -221,6 +221,7 @@ class FabmanBridge(object):
 			if (config is None):
 				self.load_config()
 			else:
+				#pprint.pprint(config)
 				self.config.update(config)
 
 			self.api_header = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(self.config['api_token'])}
@@ -424,7 +425,7 @@ class FabmanBridge(object):
 				print(message)
 			return True
 		except Exception as e: 
-			logging.error('Function FabmanBridge.display_error raised exception (' + str(e) + ')')
+			logging.error('Function FabmanBridge.display_warning raised exception (' + str(e) + ')')
 			return False
 
 	def display_text(self, text= "", duration = None): # duration None = forever
@@ -533,7 +534,7 @@ class FabmanBridge(object):
 				logging.warning('Unsupported display type:' + str(self.config["display"]))
 			return True
 		except Exception as e: 
-			logging.error('Function FabmanBridge.display_error raised exception (' + str(e) + ')')
+			logging.error('Function FabmanBridge.display_text raised exception (' + str(e) + ')')
 			return False
 
 	def _start_heartbeat_thread(self):
@@ -630,3 +631,15 @@ class FabmanBridge(object):
 			print ('Function FabmanBridge.run_bg raised exception (' + str(e) + ')')
 			return False
 '''
+
+if __name__ == '__main__':
+
+	config = { # change default settings
+		"api_url_base"       : "https://internal.fabman.io/api/v1/", # api url base / for production systems remove "internal."
+		#"reader_type"        : "Gwiot7941E",
+		"reader_type"        : "MFRC522",
+		"api_token"          : "710ce79f-684b-40d1-a4e3-0c6e5657d910",
+		"stop_button"        : 4
+	}
+	bridge = FabmanBridge(config) # of no parameter is given, read config from "fabman.json"
+	bridge.run()
