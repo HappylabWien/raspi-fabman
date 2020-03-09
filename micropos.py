@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 
 class MicroPOS(object): # combination of port expander and two multiplexers for multiple hx711 scales
 
-	def __init__(self, bridge, input_device = '/dev/input/event0', inventory_file = 'articles.csv', reset_code = 'RESET', timeout = 30, currency = "EUR", pin_reset_button = None):	
+	def __init__(self, bridge, input_device = '/dev/input/event0', inventory_file = 'articles.csv', reset_code = 'RESET', undo_code = 'UNDO', timeout = 30, currency = "EUR", pin_reset_button = None):	
 
 		# setup scanner
 		self.scanner = InputDevice(input_device)
@@ -27,6 +27,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 		self.barcode = None
 		self.sale_products = {}	
 		self.reset_code = reset_code
+		self.undo_code = undo_code
 		self.timeout = timeout # reset sale if no barcode scanned for x seconds
 		self.t_timeout = threading.Timer(self.timeout, thread_timeout) # thread for timeout
 		self.currency = currency
@@ -35,8 +36,8 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 		self.metadata = {}
 		
 		self.lock_scanner = True # disable scanner during startup screens
-		self.bridge.display_text("Welcome to\nMicroPOS\nfor Fabman")
-		time.sleep(3)
+		#self.bridge.display_text("Welcome to\nMicroPOS\nfor Fabman")
+		#time.sleep(3)
 		self.update_display()
 		self.lock_scanner = False # enable scaner
 		
@@ -105,7 +106,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 							return(None)
 						else:
 							#print ("NOT LOCKED")
-							self.barcode = x
+							#self.barcode = x
 							return(x)
 
 	def get_description(self, barcode = None):
@@ -115,7 +116,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 			return self.inventory[barcode][0]
 		else:
 			print("Barcode " + str(barcode) + " not found in inventory")
-			return False
+			return ""
 			
 	def get_price(self, barcode = None):
 		if (barcode is None):
@@ -128,6 +129,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 	
 	def reset_sale(self): 
 		self.sale_products = {}
+		self.barcode = None
 
 	def add_product_to_sale(self, barcode = None):
 		if (barcode is None):
@@ -136,6 +138,51 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 			self.sale_products[barcode]['quantity'] += 1
 		else:
 			self.sale_products[barcode] = {'description' : self.get_description(barcode), 'price' : self.get_price(barcode), 'quantity' : 1}
+	
+	def undo(self):
+		if (self.barcode is not None):			
+			print("Undo " + str(self.barcode))
+			
+			print("VORHER:")
+			pprint.pprint(self.sale_products)
+
+			# adjust cart
+			if (self.sale_products[self.barcode]['quantity'] == 1):
+				del self.sale_products[self.barcode]
+				print ("delete sales entry " + str(self.barcode))
+			else:
+				self.sale_products[self.barcode]['quantity'] -= 1
+				print ("decrement amount of " + str(self.barcode))
+			print("NACHHER:")
+			pprint.pprint(self.sale_products)
+
+			# display info
+			line1 = "1x " + self.get_description(self.barcode)
+			line2 = "removed from cart"
+			if (self.get_number_if_items() == 0): # empty shopping cart
+				line3 = "Scan barcode"
+				line4 = "to start shopping"
+			else:
+				line3 = str(self.get_number_if_items()) + " item(s) in cart"
+				line4 = "TOTAL: " + "{:.2f}".format(self.get_total()) + " " + self.currency
+
+			#print(line1)
+			#print(line2)
+			#print(line3)
+			#print(line4)
+			
+			self.bridge.display_text(line1 + "\n" + line2 + "\n" + line3 + "\n" + line4)
+
+			self.barcode = None
+			
+			#time.sleep(3)
+			#self.update_display()
+
+		else:
+			print("Nothing to be undone")
+			pos.bridge.display_text("Undo not possible")
+			time.sleep(3)
+			pos.update_display()
 			
 	def get_total(self):
 		total = 0
@@ -186,7 +233,10 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 			self.bridge.display_text(line1 + "\n" + line2 + "\n" + line3 + "\n" + line4)
 		else: # there are articles in the shopping cart
 			line1 = self.get_description()
-			line2 = "for {:.2f}".format(self.get_price()) + " " + self.currency + " added"
+			if (self.get_price() is False):
+				line2 = ""
+			else:
+				line2 = "for {:.2f}".format(self.get_price()) + " " + self.currency + " added"
 			line3 = str(self.get_number_if_items()) + " item(s) in cart"
 			line4 = "TOTAL: " + "{:.2f}".format(self.get_total()) + " " + self.currency
 			self.bridge.display_text(line1 + "\n" + line2 + "\n" + line3 + "\n" + line4)
@@ -270,15 +320,29 @@ if __name__ == '__main__':
 	t_read_key.start()
 
 	while True:
-		if (pos.read_barcode() is not None):
-			if (pos.barcode == pos.reset_code):
+		barcode = pos.read_barcode()
+		#print ("pos.undo_code = " + pos.undo_code + " / barcode = " + barcode)
+		if (barcode is not None):
+			if (barcode == pos.reset_code):
 				print("*** RESET SALE ***")
 				pos.reset_sale()	
 
 				print("cancel timeout countdown")
 				pos.t_timeout.cancel()
 				
-			elif (pos.barcode in pos.inventory):
+				pos.update_display()
+
+			elif (barcode == pos.undo_code):
+				pos.undo()
+			
+				print("restart timeout countdown: " + str(pos.timeout) + "s")
+				pos.t_timeout.cancel()
+				pos.t_timeout = threading.Timer(pos.timeout, thread_timeout)
+				pos.t_timeout.start()
+				
+			elif (barcode in pos.inventory):
+				pos.barcode = barcode
+			
 				print("Add article: " + str(pos.barcode))
 				#print(pos.get_description())
 				#print(pos.get_price())
@@ -288,10 +352,12 @@ if __name__ == '__main__':
 				pos.t_timeout.cancel()
 				pos.t_timeout = threading.Timer(pos.timeout, thread_timeout)
 				pos.t_timeout.start()
+				
+				pos.update_display()
 
 			else:
 				pos.lock_scanner = True
-				print("Unknown barcode")
+				print("Unknown barcode: " + str(barcode))
 				pos.bridge.display_text("Invalid barcode")
 				time.sleep(3)
 				pos.lock_scanner = False
@@ -301,9 +367,10 @@ if __name__ == '__main__':
 				pos.t_timeout = threading.Timer(pos.timeout, thread_timeout)
 				pos.t_timeout.start()
 				
+				pos.update_display()
 			#pprint.pprint(pos.sale_products)
 			#print("TOTAL: " + str(pos.get_total()))
-			pos.update_display()
+			
 
 			
 		#else:
