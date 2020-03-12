@@ -1,6 +1,6 @@
 # python3
 
-import requests, json, time, datetime, threading, logging, sys, pprint
+import requests, json, time, datetime, threading, logging, sys, pprint, os
 import RPi.GPIO as GPIO
 
 # for MFRC522 NFC Reader
@@ -27,9 +27,155 @@ import Adafruit_SSD1306
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from demo_opts import get_device
+from luma.core.render import canvas
 
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
 
+class Fabman(object):
+
+	def __init__(self, api_token, api_url_base="https://fabman.io/api/v1/", account_id=None):
+		self.api_token = api_token
+		self.api_header = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(self.api_token)}
+		self.api_url_base = api_url_base
+		if (account_id is not None):
+			self.account_id = account_id
+		else: # take first account_id in list (sort by id asc)
+			self.api_header = {'Authorization': 'Bearer 0adb0caf-a2ae-4586-a74e-fe0a54f06a93'}
+			api_endpoint = 'accounts'
+			query_string = 'limit=1&orderBy=id&order=asc'
+			api_url = self.api_url_base + api_endpoint + '?' + query_string
+			#print(api_url)
+			response = requests.get(api_url, headers=self.api_header)
+			if (response.status_code == 200):
+				self.account_id = json.loads(response.content.decode('utf-8'))[0]["id"]
+				logging.info('Set account id to ' + str(self.account_id))
+			else:
+				logging.error('Could not fetch account id')
+			#pprint.pprint(json.loads(response.content.decode('utf-8')))
+			self.response = {}
+			self.HTTP_OK = (200, 201, 204)
+
+	def get(self, api_endpoint, id=None, query_string='limit=50'): # fetch entry
+		if (id is None):
+			api_url = self.api_url_base + api_endpoint + '?' + query_string
+		else:
+			api_url = self.api_url_base + api_endpoint + '/' + str(id)
+		print(api_url)
+		response = requests.get(api_url, headers=self.api_header)
+		self.response = json.loads(response.content.decode('utf-8'))
+		if (response.status_code in self.HTTP_OK):
+			print("GET successful")
+			return True
+		else:
+			logging.error('GET failed')
+			return False
+		#pprint.pprint(json.loads(response.content.decode('utf-8')))
+		#return(json.loads(response.content.decode('utf-8')))
+	
+	def post(self, api_endpoint, data): # add entry
+		#data = { 'emailAddress': user_id, 'configVersion': 0 }
+		#data = { 'resource': 972, 'member': 6, 'createdAt': "2020-03-09T14:10:17.638Z" }
+		api_url = self.api_url_base + api_endpoint
+		print(api_url)
+		response = requests.post(api_url, headers=self.api_header, json=data)
+		self.response = json.loads(response.content.decode('utf-8'))
+		#print("response.status_code = " + str(response.status_code))
+		if (response.status_code in self.HTTP_OK):
+			#return json.loads(response.content.decode('utf-8'))["id"] # return id of added entry
+			print("POST successful")
+			return True
+		else:
+			logging.error('POST failed')
+			#pprint.pprint(json.loads(response.content.decode('utf-8')))
+			return False
+		#pprint.pprint(json.loads(response.content.decode('utf-8')))
+		#return(json.loads(response.content.decode('utf-8')))
+		
+	def put(self, api_endpoint, id, data): # update entry
+		if ('lockVersion' not in data.keys()):
+			# get lockversion
+			#print("lockVersion nicht in data -> get")
+			if (self.get(api_endpoint, id)):
+				lockversion = self.response['lockVersion']
+				#print ("get liefert folgende lockversion: " + str(lockversion))
+				data.update( {'lockVersion' : lockversion} )
+		api_url = self.api_url_base + api_endpoint + "/" + str(id)
+		#print(api_url)
+		response = requests.put(api_url, headers=self.api_header, json=data)
+		self.response = json.loads(response.content.decode('utf-8'))
+		#print("response.status_code = " + str(response.status_code))
+		if (response.status_code in self.HTTP_OK):
+			#return json.loads(response.content.decode('utf-8'))["id"] # return id of added entry
+			print("PUT successful")
+			return True
+		else:
+			logging.error('PUT failed')
+			pprint.pprint(json.loads(response.content.decode('utf-8')))
+			return False
+
+	def delete(self, api_endpoint, id):
+		api_url = self.api_url_base + api_endpoint + '/' + str(id)
+		print(api_url)
+		response = requests.delete(api_url, headers=self.api_header)
+		#self.response = json.loads(response.content.decode('utf-8'))
+		print("response.status_code = " + str(response.status_code))
+		if (response.status_code in self.HTTP_OK):
+			print("DELETE successful")
+			return True
+		else:
+			logging.error('DELETE failed')
+			return False
+			
+	def start_resource(self, resource_id, member_id):
+		now = datetime.datetime.utcnow().isoformat() + "Z"
+		data = {
+				  "resource": resource_id,
+				  "member": member_id,
+				  "createdAt": now,
+				  #"stoppedAt": "2020-03-09",
+				  #"idleDurationSeconds": 0,
+				  #"notes": "string",
+				  #"metadata": {}
+				}
+		if (self.post("resource-logs", data)):
+			print("resource started: " + str(self.response['id']))
+		else:
+			print("starting resource failed")
+		
+	def stop_resource(self, resource_id, member_id=None):
+	
+		# get resource-log id if active log entry
+		self.get(api_endpoint="resource-logs", id=None, query_string="resource=" + str(resource_id) + "&status=active")
+		resource_log_id = self.response[0]['id']
+	
+		now = datetime.datetime.utcnow().isoformat() + "Z"
+			
+		data = {
+				  "resource": resource_id,
+				  "stoppedAt": now,
+			   }
+			   
+		if (member_id is not None):
+			data.update( {"member": member_id} )
+
+		if (self.put("resource-logs", resource_log_id, data)):
+			print("resource stopped")
+		else:
+			print("stopping resource failed")
+		
+	def get_resources(self, space_id=None):
+		self.get(api_endpoint="resources", id=None, query_string="space="+str(space_id))
+		#resource_log_id = self.response[0]['id']
+		resources = {}
+		for r in self.response:
+			#print(str(r['id']) + ": " + r['name'])
+			resources[r['id']] = { 
+									'name' : r['name'],
+									#'metadata' : r['metadata']
+								 }
+		return resources
+	
 class Relay(object):
 
 	def __init__(self, signal_pin = 26, state = 0):
@@ -119,88 +265,6 @@ class Gwiot7941E(object):
 			logging.error('Function Gwiot7941E.read raised exception (' + str(e) + ')')
 			return False
 
-'''
-class RgbLed(object):
-
-	#def __init__(self, r_pin = 11, g_pin = 13, b_pin = 15): # BOARD mode
-	def __init__(self, r_pin = 17, g_pin = 27, b_pin = 22): # BCM mode
-
-		try:
-			GPIO.setwarnings(False)
-			self.r_pin = r_pin
-			self.g_pin = g_pin
-			self.b_pin = b_pin
-			self.r_state = False
-			self.g_state = False
-			self.b_state = False
-			GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)
-			GPIO.setup(r_pin, GPIO.OUT, initial= GPIO.LOW)
-			GPIO.setup(g_pin, GPIO.OUT, initial= GPIO.LOW)
-			GPIO.setup(b_pin, GPIO.OUT, initial= GPIO.LOW)
-		except Exception as e: 
-			logging.error('Function RgbLed.__init__ raised exception (' + str(e) + ')')
-
-	def on(self,leds,duration = None): # duration in seconds (blocking), None means infinite (non-blocking)
-		try:
-			if ("r" in leds.lower()):
-				GPIO.output(self.r_pin,GPIO.HIGH)
-				self.r_state = True
-			if ("g" in leds.lower()):
-				GPIO.output(self.g_pin,GPIO.HIGH)
-				self.r_state = True
-			if ("b" in leds.lower()):
-				GPIO.output(self.b_pin,GPIO.HIGH)
-				self.r_state = True
-			if (not(duration is None)):
-				time.sleep(duration)
-				self.off(leds)
-		except Exception as e: 
-			logging.error('Function RgbLed.on raised exception (' + str(e) + ')')
-
-	def off(self,leds, duration = None):
-		try:
-			if ("r" in leds.lower()):
-				GPIO.output(self.r_pin,GPIO.LOW)
-				self.r_state = False
-			if ("g" in leds.lower()):
-				GPIO.output(self.g_pin,GPIO.LOW)
-				self.r_state = False
-			if ("b" in leds.lower()):
-				GPIO.output(self.b_pin,GPIO.LOW)
-				self.r_state = False
-			if (not(duration is None)):
-				time.sleep(duration)
-				self.on(leds)
-		except Exception as e: 
-			logging.error('Function RgbLed.off raised exception (' + str(e) + ')')
-
-	def toggle(self,leds):
-		try:
-			if ("r" in leds.lower()):
-				if (self.r_state):
-					GPIO.output(self.r_pin,GPIO.LOW)
-					self.r_state = False
-				else:
-					GPIO.output(self.r_pin,GPIO.HIGH)
-					self.r_state = True
-			if ("g" in leds.lower()):
-				if (self.g_state):
-					GPIO.output(self.g_pin,GPIO.LOW)
-					self.g_state = False
-				else:
-					GPIO.output(self.g_pin,GPIO.HIGH)
-					self.g_state = True
-			if ("b" in leds.lower()):
-				if (self.b_state):
-					GPIO.output(self.b_pin,GPIO.LOW)
-					self.b_state = False
-				else:
-					GPIO.output(self.g_pin,GPIO.HIGH)
-					self.b_state = True
-		except Exception as e: 
-			logging.error('Function RgbLed.toggle raised exception (' + str(e) + ')')
-'''
-
 class FabmanBridge(object):
 
 	def __init__(self, config = None): # if no config is given read config from "fabman.json"
@@ -246,6 +310,8 @@ class FabmanBridge(object):
 				GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)  
 				GPIO.setup(self.config["stop_button"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 				GPIO.add_event_detect(self.config["stop_button"], GPIO.FALLING, callback=self._callback_stop_button, bouncetime=300)
+			if (self.config["display"] == "sh1106"): # 1,3" I2C OLED Display
+				self.device = get_device(("--display", self.config["display"]))
 				
 			self.screen_message = ""
 			
@@ -433,16 +499,47 @@ class FabmanBridge(object):
 			if (duration is None):
 				self.screen_message = text
 
-			if (self.config["display"] == "SSD1306_128_32"):
+			#print("*********************" + str(self.config["display"].startswith('SSD1306')))
+			if (self.config["display"] == "sh1106"): # 1,3" I2C OLED Display
+			
+				def display_line(draw, text, font_size=12, y=0, x=0, font='C&C Red Alert [INET].ttf'):
+					# use custom font
+					font_path = os.path.abspath(os.path.join(os.path.dirname(__file__),'fonts', font))
+					#font2 = ImageFont.truetype(font_path, 12)
+					#print (font_path)
+					font = ImageFont.truetype(font_path, font_size)
+					#with canvas(device) as draw:
+					draw.text((x, y), str(text), font=font, fill="white")
+
+				if (type(text).__name__ == "str"):
+					default_size = 15
+					#print(type(text).__name__)
+					line_array = text.splitlines()
+					lines = []
+					#pprint.pprint(line_array)
+					for i in range(len(line_array)):
+						#print (line_array[i])
+						lines.insert(i, { "text" : line_array[i], "size" : default_size })
+					#pprint.pprint(lines)
+				#self.device = get_device(("--display", self.config["display"]))
+				with canvas(self.device) as draw:
+					y = 0
+					for line in lines:
+						#print(line['text'])
+						display_line(draw, line['text'], line['size'], y)
+						y += (line['text'].count("\n") + 1) * line['size']
+						
+			elif (self.config["display"].startswith('SSD1306')):
 			
 				# Raspberry Pi pin configuration:
 				RST = None     # on the PiOLED this pin isnt used
 
-				# 128x32 display with hardware I2C:
-				disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST)
-
-				# 128x64 display with hardware I2C:
-				# disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST)
+				if (self.config["display"] == "SSD1306_128_32"):
+					# 128x32 display with hardware I2C:
+					disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST)
+				elif (self.config["display"] == "SSD1306_128_64"):
+					# 128x64 display with hardware I2C:
+					disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST)
 
 				# Note you can change the I2C address by passing an i2c_address parameter like:
 				# disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3C)
@@ -530,8 +627,9 @@ class FabmanBridge(object):
 					if (len(lines) >= 4):
 						draw.text((x, top+3*linespacing), lines[3],  font=font, fill=255)
 					
+						
 			else:
-				logging.warning('Unsupported display type:' + str(self.config["display"]))
+				logging.warning('Unsupported display type: ' + str(self.config["display"]))
 			return True
 		except Exception as e: 
 			logging.error('Function FabmanBridge.display_text raised exception (' + str(e) + ')')
@@ -631,7 +729,6 @@ class FabmanBridge(object):
 			print ('Function FabmanBridge.run_bg raised exception (' + str(e) + ')')
 			return False
 '''
-
 if __name__ == '__main__':
 
 	config = { # change default settings
