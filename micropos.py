@@ -180,9 +180,9 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 
 		else:
 			print("Nothing to be undone")
-			pos.bridge.display_text("Undo not possible")
+			self.bridge.display_text("Undo not possible")
 			time.sleep(3)
-			pos.update_display()
+			self.update_display()
 			
 	def get_total(self):
 		total = 0

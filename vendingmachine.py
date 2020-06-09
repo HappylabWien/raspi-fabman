@@ -18,7 +18,256 @@ from adafruit_mcp230xx.mcp23017 import MCP23017
 
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
 
+
 class Scale_PE_MUX(object): # combination of port expander and two multiplexers for multiple hx711 scales
+
+	def __init__(self, i2c_addr = 0x20, channel = 0):	
+	
+		self.channel = channel
+		self.i2c_addr = i2c_addr
+				
+		# initialize port expander
+		i2c = busio.I2C(board.SCL, board.SDA)
+		self.mcp = MCP23017(i2c, address=self.i2c_addr)
+		
+		# DT - yellow (input)
+
+		self.pin_dt1_s0 = self.mcp.get_pin(0)
+		self.pin_dt1_s1 = self.mcp.get_pin(1)
+		self.pin_dt1_s2 = self.mcp.get_pin(2)
+		self.pin_dt1_en = self.mcp.get_pin(3)
+
+		self.pin_dt2_s0 = self.mcp.get_pin(4)
+		self.pin_dt2_s1 = self.mcp.get_pin(5)
+		self.pin_dt2_s2 = self.mcp.get_pin(6)
+		self.pin_dt2_en = self.mcp.get_pin(7)
+		
+		self.pin_dt1_en.switch_to_output(value=True)
+		self.pin_dt1_s0.switch_to_output(value=True)
+		self.pin_dt1_s1.switch_to_output(value=True)
+		self.pin_dt1_s2.switch_to_output(value=True)
+
+		self.pin_dt2_en.switch_to_output(value=True)
+		self.pin_dt2_s0.switch_to_output(value=True)
+		self.pin_dt2_s1.switch_to_output(value=True)
+		self.pin_dt2_s2.switch_to_output(value=True)
+
+		# SCK - orange (output)
+		self.pin_sck1_s0 = self.mcp.get_pin(8)
+		self.pin_sck1_s1 = self.mcp.get_pin(9)
+		self.pin_sck1_s2 = self.mcp.get_pin(10)
+		self.pin_sck1_en = self.mcp.get_pin(11)
+
+		self.pin_sck2_s0 = self.mcp.get_pin(12)
+		self.pin_sck2_s1 = self.mcp.get_pin(13)
+		self.pin_sck2_s2 = self.mcp.get_pin(14)
+		self.pin_sck2_en = self.mcp.get_pin(15)
+		
+		self.pin_sck1_en.switch_to_output(value=True)
+		self.pin_sck1_s0.switch_to_output(value=True)
+		self.pin_sck1_s1.switch_to_output(value=True)
+		self.pin_sck1_s2.switch_to_output(value=True)
+
+		self.pin_sck2_en.switch_to_output(value=True)
+		self.pin_sck2_s0.switch_to_output(value=True)
+		self.pin_sck2_s1.switch_to_output(value=True)
+		self.pin_sck2_s2.switch_to_output(value=True)
+		
+		self.disable()
+		self.select_channel(self.channel)
+		
+	def select_channel(self, channel):
+		self.channel = channel
+
+		#print ("Set channel to " + str(channel))
+		
+		# disable MUXs
+		#self.pin_sck_en.value = True
+		#self.pin_dt_en.value = True
+
+		# select channel
+		if (channel == 0):
+			(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (0, 0)
+			
+			#(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			#(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			#(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (1, 1)
+		elif (channel == 1):
+			(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (1, 1)
+			(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (0, 0)
+			
+			#(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			#(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			#(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (1, 1)
+		elif (channel == 2):
+			(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (1, 1)
+			(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (0, 0)
+			
+			#(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			#(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			#(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (1, 1)
+		elif (channel == 3):
+			(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (1, 1)
+			(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (1, 1)
+			(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (0, 0)
+			
+			#(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			#(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			#(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (1, 1)
+		elif (channel == 4):
+			(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (1, 1)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (0, 0)
+			
+			#(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			#(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			#(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (1, 1)
+		elif (channel == 5):
+			(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (1, 1)
+			(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (1, 1)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (0, 0)
+			
+			#(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			#(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			#(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (1, 1)
+		elif (channel == 6):
+			(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (1, 1)
+			(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (1, 1)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (0, 0)
+			
+			#(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			#(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			#(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (1, 1)
+		elif (channel == 7):
+			(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (1, 1)
+			(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (1, 1)
+			(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (1, 1)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (0, 0)
+			
+			#(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			#(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			#(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (1, 1)
+		elif (channel == 8):
+			#(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			#(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			#(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (1, 1)
+			
+			(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (0, 0)
+		elif (channel == 9):
+			#(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			#(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			#(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (1, 1)
+			
+			(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (1, 1)
+			(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (0, 0)
+		elif (channel == 10):
+			#(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			#(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			#(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (1, 1)
+			
+			(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (1, 1)
+			(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (0, 0)
+		elif (channel == 11):
+			#(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			#(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			#(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (1, 1)
+			
+			(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (1, 1)
+			(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (1, 1)
+			(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (0, 0)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (0, 0)
+		elif (channel == 12):
+			#(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			#(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			#(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (1, 1)
+			
+			(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (1, 1)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (0, 0)
+		elif (channel == 13):
+			#(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			#(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			#(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (1, 1)
+			
+			(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (1, 1)
+			(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (0, 0)
+			(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (1, 1)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (0, 0)
+		elif (channel == 14):
+			#(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			#(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			#(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (1, 1)
+			
+			(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (0, 0)
+			(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (1, 1)
+			(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (1, 1)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (0, 0)
+		elif (channel == 15):
+			#(self.pin_dt1_s0.value, self.pin_sck1_s0.value) = (0, 0)
+			#(self.pin_dt1_s1.value, self.pin_sck1_s1.value) = (0, 0)
+			#(self.pin_dt1_s2.value, self.pin_sck1_s2.value) = (0, 0)
+			(self.pin_dt1_en.value, self.pin_sck1_en.value) = (1, 1)
+			
+			(self.pin_dt2_s0.value, self.pin_sck2_s0.value) = (1, 1)
+			(self.pin_dt2_s1.value, self.pin_sck2_s1.value) = (1, 1)
+			(self.pin_dt2_s2.value, self.pin_sck2_s2.value) = (1, 1)
+			(self.pin_dt2_en.value, self.pin_sck2_en.value) = (0, 0)
+
+		# enable MUXs
+		#self.pin_sck_en.value = False
+		#self.pin_dt_en.value = False
+
+	def disable(self):
+		# disable MUXs
+		self.pin_sck1_en.value = True
+		self.pin_sck2_en.value = True
+		self.pin_dt1_en.value = True
+		self.pin_dt2_en.value = True
+		
+	def enable(self):
+		# enable MUXs
+		pass
+		#self.pin_sck1_en.value = False
+		#self.pin_sck2_en.value = False
+		#self.pin_dt1_en.value = False
+		#self.pin_dt2_en.value = False
+
+
+class Scale_PE_MUX_analog(object): # combination of port expander and two multiplexers for multiple hx711 scales
 
 	def __init__(self, i2c_addr = 0x20, channel = 0):	
 	
@@ -271,6 +520,12 @@ class VendingMachine(object):
 
 	def __init__(self, bridge = None, vend = None, articles = None, config = None): # if no config/articles is given read config from "vendingmachine.json"/"articles.json"
 		try:
+		
+			# set enable pin for nfc reader and spi display and switch on power for mux boards
+			GPIO.setmode(GPIO.BCM)
+			GPIO.setup(25, GPIO.OUT)
+			GPIO.output(25, 1)
+		
 			self.bridge = bridge
 			self.vend = vend
 			self.pe = {}
@@ -311,7 +566,7 @@ class VendingMachine(object):
 			for key in self.articles:
 			
 				self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
-				self.pe[self.articles[key]['pe_i2c_addr']].enable()
+				#self.pe[self.articles[key]['pe_i2c_addr']].enable()
 			
 				weight_old = self.scales[key].getWeight(1)
 				print ("weight_old = " + str(weight_old))
@@ -337,7 +592,7 @@ class VendingMachine(object):
 				#self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
 
 				self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
-				self.pe[self.articles[key]['pe_i2c_addr']].enable()
+				#self.pe[self.articles[key]['pe_i2c_addr']].enable()
 				
 				self.bridge.display_text("Initializing\n" + str(key))
 				self.scales[key] = Scale(HX711(self.articles[key]['dout'],self.articles[key]['spd_sck'])) 
@@ -355,7 +610,7 @@ class VendingMachine(object):
 									'price'       : 0.0 
 								   }
 								   
-				self.pe[self.articles[key]['pe_i2c_addr']].enable()
+				#self.pe[self.articles[key]['pe_i2c_addr']].enable()
 
 			return True
 		except Exception as e: 
@@ -411,7 +666,7 @@ class VendingMachine(object):
 				
 					#self.pe.select_channel(self.articles[key]['mux_channel'])
 					self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
-					self.pe[self.articles[key]['pe_i2c_addr']].enable()
+					#self.pe[self.articles[key]['pe_i2c_addr']].enable()
 					
 					self.scales[key].setReferenceUnit(1)
 
@@ -554,7 +809,7 @@ class VendingMachine(object):
 								#self.bridge.display_text("Checking\n" + str(key) + "...")		
 							
 								self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
-								self.pe[self.articles[key]['pe_i2c_addr']].enable()
+								#self.pe[self.articles[key]['pe_i2c_addr']].enable()
 								
 								weight_new = self.scales[key].getWeight(1)
 								#print ("weight_new = " + str(weight_new))

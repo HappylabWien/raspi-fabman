@@ -15,6 +15,9 @@ import binascii
 from gpiozero import RGBLED
 from colorzero import Color
 
+# for Buzzer
+from gpiozero import Buzzer
+
 # for Email Alerts
 import smtplib
 from email.mime.text import MIMEText
@@ -127,7 +130,7 @@ class Fabman(object):
 			logging.error('DELETE failed')
 			return False
 			
-	def start_resource(self, resource_id, member_id):
+	def start_resource(self, resource_id, member_id, takeover=True): # if takeover=True: if session running -> stop and start again as new user
 		now = datetime.datetime.utcnow().isoformat() + "Z"
 		data = {
 				  "resource": resource_id,
@@ -140,8 +143,10 @@ class Fabman(object):
 				}
 		if (self.post("resource-logs", data)):
 			print("resource started: " + str(self.response['id']))
+			return True
 		else:
 			print("starting resource failed")
+			return False
 		
 	def stop_resource(self, resource_id, member_id=None):
 	
@@ -161,8 +166,10 @@ class Fabman(object):
 
 		if (self.put("resource-logs", resource_log_id, data)):
 			print("resource stopped")
+			return True
 		else:
 			print("stopping resource failed")
+			return False
 		
 	def get_resources(self, space_id=None):
 		self.get(api_endpoint="resources", id=None, query_string="space="+str(space_id))
@@ -279,7 +286,8 @@ class FabmanBridge(object):
 							"led_g"              : 27,
 							"led_b"              : 22,
 							"display"            : "SSD1306_128_32",
-							"relay"              : 26
+							"relay"              : 26,
+							"buzzer"             : 18
 						  }
 
 			if (config is None):
@@ -292,13 +300,14 @@ class FabmanBridge(object):
 			self.session_id = None
 			self.next_heartbeat_call = time.time()
 			self.rgbled = RGBLED(self.config["led_r"], self.config["led_g"], self.config["led_b"])
+			self.buzzer = Buzzer(self.config["buzzer"])
 			self.relay = Relay(self.config["relay"],0)
 			GPIO.setwarnings(False)
 			
 			if (self.config["reader_type"] == "MFRC522"):
 				#self.reader = SimpleMFRC522()
 				#self.reader = SimpleMFRC522()
-				self.reader = MFRC522.MFRC522()
+				self.reader = MFRC522.MFRC522(dev=1)
 				self.chip_type = "nfca"
 			elif (self.config["reader_type"] == "Gwiot7941E"):
 				#print ("setze reader")
