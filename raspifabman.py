@@ -505,7 +505,7 @@ class FabmanBridge(object):
 
 	def display_text(self, text= "", duration = None): # duration None = forever
 		try:
-			if (duration is None):
+			if (duration is None): # new text remains "forever" - no old text to recover afterwards
 				self.screen_message = text
 
 			#print("*********************" + str(self.config["display"].startswith('SSD1306')))
@@ -538,6 +538,16 @@ class FabmanBridge(object):
 						display_line(draw, line['text'], line['size'], y)
 						y += (line['text'].count("\n") + 1) * line['size']
 						
+				if (duration is not None):
+					time.sleep(duration)
+					
+					with canvas(self.device) as draw:
+						y = 0
+						for line in lines:
+							#print(line['text'])
+							display_line(draw=draw, text=self.screen_message, y=y)
+							y += (line['text'].count("\n") + 1) * line['size']
+					
 			elif (self.config["display"].startswith('SSD1306')):
 			
 				# Raspberry Pi pin configuration:

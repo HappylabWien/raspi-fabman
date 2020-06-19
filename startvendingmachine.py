@@ -19,3 +19,4 @@ vending_machine = VendingMachine(bridge, vend) # read config from "articles.json
 
 #print(vending_machine.open_door())
 vending_machine.run()
+#vending_machine.show_weights()
