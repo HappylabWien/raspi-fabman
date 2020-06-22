@@ -790,7 +790,11 @@ class VendingMachine(object):
 				
 			# use default values, if not set in config
 			if 'pin_door_status' not in self.config:
-				self.config['pin_door_status'] = 16			
+				self.config['pin_door_status'] = 16	
+			if 'pin_dout' not in self.config:
+				self.config['pin_dout'] = 5				
+			if 'pin_spd_sck' not in self.config:
+				self.config['pin_spd_sck'] = 6				
 			
 			GPIO.setmode(GPIO.BCM)
 			GPIO.setup(self.config['pin_door_status'], GPIO.IN, GPIO.PUD_UP)
@@ -853,7 +857,8 @@ class VendingMachine(object):
 				#self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
 				#self.pe[self.articles[key]['pe_i2c_addr']].enable()
 				
-				self.scales[key] = Scale(HX711(self.articles[key]['dout'],self.articles[key]['spd_sck'])) 
+				#self.scales[key] = Scale(HX711(self.articles[key]['dout'],self.articles[key]['spd_sck'])) 
+				self.scales[key] = Scale(HX711(self.config['pin_dout'],self.config['pin_spd_sck'])) 
 				self.scales[key].setReferenceUnit(self.articles[key]['ref'])
 				self.scales[key].setOffset(self.articles[key]['offset'])
 				self.scales[key].reset()
