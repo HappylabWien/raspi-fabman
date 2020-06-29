@@ -1,24 +1,13 @@
 {
-    "Scale 0": {
+    "Scale 32-0": {
+        "pe_i2c_addr": 32,
         "mux_channel": 0,
-        "name": "B\u00fcroklammer",
-        "offset": 233414.66666666666,
-        "pe_i2c_addr": 33,
-        "price": 1,
-        "product_id": "2620647f-85b7-6e07-8505-33fe822c2266",
-        "ref": 2083.1401062417003,
-        "stock_min": 0,
-        "weight": 0.39
-    },
-    "Scale 1": {
-        "mux_channel": 0,
-        "name": "Bohrer 2mm",
-        "offset": 281210.3333333333,
-        "pe_i2c_addr": 33,
-        "price": 19.9,
-        "product_id": "2620647f-85b7-6e07-8505-33fe822c2266",
-        "ref": 1865.9993359893758,
-        "stock_min": 0,
-        "weight": 23.39
+        "name": "VHM Fr\u00e4ser 2-Schneider 3mm lang",
+        "ref": 1840.6576344086022,
+        "offset": 206480.16666666666,
+        "price": 15.9,
+        "weight": 3.22,
+        "stock_min": 1,
+        "product_id": "dd50b798-cf73-11e3-a0f5-b8ca3a64f8f4"
     }
 }

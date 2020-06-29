@@ -638,7 +638,7 @@ class Vend(object):
 	def save_config(self, filename = "vend.json"):
 		try:
 			with open(filename, 'w') as fp:
-				json.dump(self.config, fp, sort_keys=True, indent=4)
+				json.dump(self.config, fp, sort_keys=False, indent=4)
 			return True
 		except Exception as e: 
 			logging.error('Function Vend.save_config raised exception (' + str(e) + ')')
@@ -883,7 +883,7 @@ class VendingMachine(object):
 	def save_articles(self, filename = "articles.json"):
 		try:
 			with open(filename, 'w') as fp:
-				json.dump(self.articles, fp, sort_keys=True, indent=4)
+				json.dump(self.articles, fp, sort_keys=False, indent=4)
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_articles raised exception (' + str(e) + ')')
@@ -901,7 +901,7 @@ class VendingMachine(object):
 	def save_config(self, filename = "vendingmachine.json"):
 		try:
 			with open(filename, 'w') as fp:
-				json.dump(self.config, fp, sort_keys=True, indent=4)
+				json.dump(self.config, fp, sort_keys=False, indent=4)
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_config raised exception (' + str(e) + ')')
@@ -1038,9 +1038,9 @@ class VendingMachine(object):
 			
 			ref = self.scales[key].source.REFERENCE_UNIT
 			offset = self.scales[key].source.OFFSET
-			#print ("Value (original) for " + str(key) + ": " + str(value))
-			#print ("ref = " + str(ref))
-			#print ("offset = " + str(offset))
+			print ("Value (original) for " + str(key) + ": " + str(value))
+			print ("ref = " + str(ref))
+			print ("offset = " + str(offset))
 			weight = (value - offset) / ref
 			
 			#weight = self.scales[key].getWeight(times)

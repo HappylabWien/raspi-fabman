@@ -508,7 +508,7 @@ class FabmanBridge(object):
 			if (duration is None): # new text remains "forever" - no old text to recover afterwards
 				self.screen_message = text
 
-			#print("*********************" + str(self.config["display"].startswith('SSD1306')))
+			#print("************interval*****" + str(self.config["display"].startswith('SSD1306')))
 			if (self.config["display"] == "sh1106"): # 1,3" I2C OLED Display
 			
 				def display_line(draw, text, font_size=12, y=0, x=0, font='C&C Red Alert [INET].ttf'):

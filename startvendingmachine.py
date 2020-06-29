@@ -13,7 +13,7 @@ config = { # change default settings
 bridge = FabmanBridge() # read config from "fabman.json"
 
 vend = None
-#vend = Vend() # uncomment this to active vend sync (configure in vend.json)
+#vend = Vend() # uncomment this to activate vend sync (configure in vend.json)
 
 vending_machine = VendingMachine(bridge, vend) # read config from "articles.json"
 
