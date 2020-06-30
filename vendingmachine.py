@@ -756,6 +756,24 @@ class Vend(object):
 		 
 class VendingMachine(object):
 
+	'''
+	Example for articles.json
+	{
+		"Scale 32-0": {
+			"pe_i2c_addr": 32,
+			"mux_channel": 0,
+			"name": "VHM Fr\u00e4ser 2-Schneider 3mm lang",
+			"ref": 1840.6576344086022,
+			"offset": 194330.08058494623,
+			"price": 15.9,
+			"weight": 3.22,
+			"stock_min": 1,
+			"product_id": "dd50b798-cf73-11e3-a0f5-b8ca3a64f8f4",
+			"stock": 3
+		}
+	}
+	'''
+
 	def __init__(self, bridge = None, vend = None, articles = None, config = None): # if no config/articles is given read config from "vendingmachine.json"/"articles.json"
 		try:
 		
@@ -818,7 +836,7 @@ class VendingMachine(object):
 
 				weight = self.get_weight(key)
 
-				print ("Weight on " + str(key) + " = " + str(weight))
+				logging.info("Weight on " + str(key) + " = " + str(weight))
 
 				if 'stock' not in self.articles[key]:
 					self.articles[key]['stock'] = max(0,round(weight_old / self.articles[key]['weight']))
@@ -851,12 +869,12 @@ class VendingMachine(object):
 	def _setup(self):
 		try:
 			for key in self.articles:
-				print ("Initializing " + key)
+				logging.info("Initializing " + key)
 				self.bridge.display_text("Initializing\n" + str(key))
 				
 				#self.pe.update( { self.articles[key]['pe_i2c_addr'] : Scale_PE_MUX(int(self.articles[key]['pe_i2c_addr']), int(self.articles[key]['mux_channel'])) 	} )
 				self.pe.update( { self.articles[key]['pe_i2c_addr'] : PortExpander(int(self.articles[key]['pe_i2c_addr']))} )
-				print ("Add Port Expander on i2c Address " + str(int(self.articles[key]['pe_i2c_addr'])))
+				logging.info("Add Port Expander on i2c Address " + str(int(self.articles[key]['pe_i2c_addr'])))
 
 				#self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
 
@@ -1073,7 +1091,7 @@ class VendingMachine(object):
 			time.sleep(1)
 
 	def adjust_offset(self, scale_key = None): # if no scale_key is provided, all scales will be calibrated
-		try:
+		#try:
 			#pprint.pprint(self.articles)
 
 
@@ -1088,6 +1106,7 @@ class VendingMachine(object):
 					#print ("   Actual (wrong) Weight: " + str(weight_actual))
 
 					if (weight_actual != False):
+						#pprint.pprint(self.transactions)
 						weight_target = self.transactions[key]['stock_new'] * self.articles[key]['weight']
 						#print ("   Weight should be:      " + str(weight_target) + " (" + str(self.transactions[key]['stock_new']) + " * " + str(self.articles[key]['weight']) + "g)")
 
@@ -1101,25 +1120,26 @@ class VendingMachine(object):
 						#print ("   New Offset:            " + str(self.articles[key]['offset']))
 
 						#print ("Offset for Scale " + str(key) + " adjusted ( " + str(offset_old) + " => " + str(self.articles[key]['offset']) + " / weight = " + str(self.get_weight(key)) + "g )")
-						print ("Offset for Scale " + str(key) + " adjusted ( " + str(offset_old) + " => " + str(self.articles[key]['offset']) + " )")
+						logging.info('Offset for Scale "' + str(key) + '" adjusted (' + str(offset_old) + " => " + str(self.articles[key]['offset']) + ")")
 			
 			#if (self.get_weight(key) == False):
 			#print ("SAVE " + str(self.articles[key]['offset']))
 			self.save_articles()
 				
 			return self.articles
-		except Exception as e: 
-			logging.error('Function VendingMachine.adjust_offset raised exception (' + str(e) + ')')
-			return False
+		#except Exception as e: 
+		#	logging.error('Function VendingMachine.adjust_offset raised exception (' + str(e) + ')')
+		#	return False
 
-	def adjust_offset_thread(self):
+	def adjust_offset_thread(self, wait_during_transaction=30, wait_between_adjustments=60):
 		try:
 			while True:
 				for key in self.articles:
 					while (self.in_transaction == True):
 						print ("Waiting for end of transaction to continue adjusting offset values. (in_transaction = " + str(self.in_transaction) + ")")
-						time.sleep(5)
+						time.sleep(wait_during_transaction)
 					self.adjust_offset(key)
+				time.sleep(wait_between_adjustments)
 		except KeyboardInterrupt:
 			return False
 			
@@ -1136,14 +1156,14 @@ class VendingMachine(object):
 					#if (self.bridge is not None):
 					#	self.bridge.run()
 					
-					print ("READY FOR TRANSACTION - SHOW CARD")
+					logging.info("Ready for transaction - waiting for card.")
 					self.in_transaction = False
 					self.bridge.display_text("Swipe your\nmember card\nto start\nshopping...")
 					key_id = self.bridge.read_key()
 					if (key_id): # avoid processing ghost keys
 						if (self.bridge.access(key_id)): # wait for key card
 							self.bridge.buzzer.beep(on_time=0.1, off_time=0, n=1, background=False)
-							print ("ACCESS GRANTED")
+							logging.info("Access granted.")
 							self.in_transaction = True
 							# access granted
 							
@@ -1180,13 +1200,13 @@ class VendingMachine(object):
 							#input ("Press ENTER to open the door...")
 							self.open_door()
 							self.bridge.display_text("Take items and\nclose door to\nfinish shopping")				
-							print ("DOOR OPEN")
+							#logging.info("Door is open.")
 							#input ("Take items and press ENTER to close the door...")
 							
 							# (3) wait for door to be closed
 							while (self.door_is_open()):
 								time.sleep(0.5)
-							print ("DOOR CLOSED")
+							logging.info("Door is closed - processing purchase")
 							self.bridge.display_text("Processing\nyour purchase...")
 							
 							# (4) measure weight at end of transaction again 
@@ -1205,14 +1225,16 @@ class VendingMachine(object):
 								items_taken = round(weight_loss/self.articles[key]['weight'])
 								stock_new = self.transactions[key]['stock_old'] - items_taken
 								if (items_taken != 0):
-									print ("Stock change on " + str(key) + ": " + "{:+2d}".format(-items_taken) + " (" + self.articles[key]['name'] + ")")  
+									logging.info("Stock change on " + str(key) + ": " + "{:+2d}".format(-items_taken) + " (" + self.articles[key]['name'] + ")")  
+									logging.info("New stock on " + str(key) + ": " + str(stock_new))  
 								if (items_taken > 0):
 									description = str(items_taken) + " x " + self.articles[key]['name'] + " á " + "{:.2f}".format(self.articles[key]['price'])
 									price = items_taken * self.articles[key]['price']
 								else:
 									description = "n/a"
 									price = 0.0
-										
+								#print("VOR UPDATE:")
+								#pprint.pprint(self.transactions)		
 								self.transactions[key].update( { 
 													'weight_new'  : weight_new, 
 													'stock_new'   : stock_new,
@@ -1221,6 +1243,8 @@ class VendingMachine(object):
 													'description' : description, 
 													'price'       : price 
 												   } )
+								#print("NACH UPDATE:")
+								#pprint.pprint(self.transactions)		
 							
 								if (items_taken < 0):
 									self.bridge.send_email("Fabman Vending Machine: Stock Level Increased", "Article:<br>" + str(self.articles[key]) + "<br><br>Transaction Details:<br>" + str(self.transactions[key]))
@@ -1277,11 +1301,11 @@ class VendingMachine(object):
 										self.vend.add_product_to_sale(self.articles[key]['product_id'], self.transactions[key]['items_taken'], self.articles[key]['price']/(100+tax_percent)*100, self.articles[key]['price']/(100+tax_percent)*tax_percent)
 								response = self.vend.close_sale()
 								if response.status_code == 200:
-									print("Vend sale posted successfully.")
+									logging.info("Vend sale posted successfully.")
 									response = json.loads(response.content.decode('utf-8'))
 									pprint.pprint(response)
 								else:
-									print("Vend sale FAILED.")
+									logging.error("Vend sale FAILED.")
 									pprint.pprint(response)
 							
 							#input("\nPress Enter to continue...")			
@@ -1289,16 +1313,30 @@ class VendingMachine(object):
 							# (7) save new stock values for next transaction
 							for key in self.articles:
 								self.articles[key]['stock'] = self.transactions[key]['stock_new']
-								self.transactions[key] = { 
-															'weight_old' : self.transactions[key]['weight_new'],
-															'stock_old'  : self.transactions[key]['stock_new']
-														 }
 								
+								weight_old = self.transactions[key]['weight_new']
+								stock_old = self.transactions[key]['stock_new']
+								self.transactions[key].update( 
+																{ 
+																	'weight_old' : weight_old,
+																	'stock_old'  : stock_old
+																} 
+															 )
+								'''
+								self.transactions[key].update( { 
+													'weight_new'  : weight_new, 
+													'stock_new'   : stock_new,
+													'weight_loss' : weight_loss, 
+													'items_taken' : items_taken, 
+													'description' : description, 
+													'price'       : price 
+												   } )
+								'''
 							self.save_articles()
 							
 						else:
 							self.bridge.buzzer.beep(on_time=0.1, off_time=0.1, n=3, background=False)
-							print ("ACCESS DENIED")
+							logging.info("Access denied.")
 							self.bridge.display_text("Access\ndenied", 3)
 							#self.bridge.display_text("Proecessing\nyour purchase...", 3)
 					#else:

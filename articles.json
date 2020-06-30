@@ -4,11 +4,11 @@
         "mux_channel": 0,
         "name": "VHM Fr\u00e4ser 2-Schneider 3mm lang",
         "ref": 1840.6576344086022,
-        "offset": 206480.16666666666,
+        "offset": 211609.16666666666,
         "price": 15.9,
         "weight": 3.22,
         "stock_min": 1,
         "product_id": "dd50b798-cf73-11e3-a0f5-b8ca3a64f8f4",
-        "stock": 3
+        "stock": 0
     }
 }

@@ -662,7 +662,7 @@ class FabmanBridge(object):
 			response = requests.post(api_url, headers=self.api_header, json=data)
 			if response.status_code == 200:
 				response = json.loads(response.content.decode('utf-8'))
-				logging.debug("(Heartbeat)")
+				logging.debug("Heartbeat sent")
 			else:
 				logging.warning("Heartbeat failed")
 			self.next_heartbeat_call += self.config["heartbeat_interval"]
@@ -729,7 +729,8 @@ class FabmanBridge(object):
 			
 			server.sendmail(self.config["email_sender"], [email_to], msg.as_string())
 
-			logging.info('Email "' + subject + '" sent to ' + email_to + ': ' + text)
+			logging.info('Email "' + subject + '" sent to ' + email_to)
+			#logging.debug(text)
 			server.quit()		
 
 		except Exception as e: 
