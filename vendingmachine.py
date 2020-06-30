@@ -17,6 +17,9 @@ import board
 import busio
 from adafruit_mcp230xx.mcp23017 import MCP23017
 
+# for background offset adjustment
+import threading
+
 logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO) # CRITICAL, ERROR, WARNING, INFO, DEBUG
 
 class PortExpander(object): # combination of port expander and multiplexers for multiple hx711 scales
@@ -764,6 +767,7 @@ class VendingMachine(object):
 			self.bridge = bridge
 			self.vend = vend
 			self.pe = {}
+			self.in_transaction = False
 			
 			# load article settings
 			if (articles is None):
@@ -812,14 +816,18 @@ class VendingMachine(object):
 				weight_old = self.scales[key].getWeight(1)
 				'''
 
-				weight_old = self.get_weight(key)
+				weight = self.get_weight(key)
 
-				print ("Weight on " + str(key) + " = " + str(weight_old))
-				
-				stock_old = max(0,round(weight_old / self.articles[key]['weight']))
+				print ("Weight on " + str(key) + " = " + str(weight))
+
+				if 'stock' not in self.articles[key]:
+					self.articles[key]['stock'] = max(0,round(weight_old / self.articles[key]['weight']))
+
 				self.transactions[key] = { 
-											'weight_old' : weight_old,
-											'stock_old'  : stock_old
+											'weight_old' : weight,
+											'weight_new' : weight,
+											'stock_old'  : self.articles[key]['stock'],
+											'stock_new'  : self.articles[key]['stock']
 										 }
 
 				'''
@@ -828,7 +836,6 @@ class VendingMachine(object):
 				
 				#self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
 				#print ("=========> VALUE 2ND READ from " + str(key) + ": " + str(self.scales[key].source.read()))
-				
 				
 				
 
@@ -863,10 +870,10 @@ class VendingMachine(object):
 				self.scales[key].setOffset(self.articles[key]['offset'])
 				self.scales[key].reset()
 				self.transactions[key] = { 
-									'weight_new'  : 0.0, 
-									'weight_old'  : 0.0, 
-									'stock_new'   : 0, 
-									'stock_old'   : 0, 
+									'weight_new'  : self.articles[key]['stock'] * self.articles[key]['weight'], 
+									'weight_old'  : self.articles[key]['stock'] * self.articles[key]['weight'], 
+									'stock_new'   : self.articles[key]['stock'], 
+									'stock_old'   : self.articles[key]['stock'], 
 									'weight_loss' : 0, 
 									'items_taken' : 0, 
 									'description' : "n/a", 
@@ -882,9 +889,12 @@ class VendingMachine(object):
 	
 	def save_articles(self, filename = "articles.json"):
 		try:
-			with open(filename, 'w') as fp:
-				json.dump(self.articles, fp, sort_keys=False, indent=4)
-			return True
+			#try:
+				with open(filename, 'w') as fp:
+					json.dump(self.articles, fp, sort_keys=False, indent=4)
+				return True
+			#except KeyboardInterrupt:
+			#	return False
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_articles raised exception (' + str(e) + ')')
 			return False
@@ -895,7 +905,7 @@ class VendingMachine(object):
 				self.articles = json.load(fp)
 			return self.articles
 		except Exception as e: 
-			logging.error('Function VendingMachine.save_articles raised exception (' + str(e) + ')')
+			logging.error('Function VendingMachine.load_articles raised exception (' + str(e) + ')')
 			return False
 
 	def save_config(self, filename = "vendingmachine.json"):
@@ -1038,9 +1048,9 @@ class VendingMachine(object):
 			
 			ref = self.scales[key].source.REFERENCE_UNIT
 			offset = self.scales[key].source.OFFSET
-			print ("Value (original) for " + str(key) + ": " + str(value))
-			print ("ref = " + str(ref))
-			print ("offset = " + str(offset))
+			#print ("Value (original) for " + str(key) + ": " + str(value))
+			#print ("ref = " + str(ref))
+			#print ("offset = " + str(offset))
 			weight = (value - offset) / ref
 			
 			#weight = self.scales[key].getWeight(times)
@@ -1061,10 +1071,65 @@ class VendingMachine(object):
 				#self.get_weight(key)
 				print (str(key) + ": " + str(self.get_weight(key)))
 			time.sleep(1)
-	
+
+	def adjust_offset(self, scale_key = None): # if no scale_key is provided, all scales will be calibrated
+		try:
+			#pprint.pprint(self.articles)
+
+
+			for key in self.articles:
+				if ((scale_key is None) or (key == scale_key)):
+				
+					#print ("Adjust Offset for Scale " + str(key))
+					#print ("   Old Offset:            " + str(self.articles[key]['offset']))
+					offset_old = self.articles[key]['offset']
+				
+					weight_actual = self.get_weight(key)
+					#print ("   Actual (wrong) Weight: " + str(weight_actual))
+
+					if (weight_actual != False):
+						weight_target = self.transactions[key]['stock_new'] * self.articles[key]['weight']
+						#print ("   Weight should be:      " + str(weight_target) + " (" + str(self.transactions[key]['stock_new']) + " * " + str(self.articles[key]['weight']) + "g)")
+
+						weight_error = weight_actual - weight_target
+						offset_error = weight_error * self.articles[key]['ref']
+						#print ("   Offset Error:          " + str(offset_error) + " (" + str(weight_error) + " * " + str(offset_error) + ")")
+
+						self.articles[key]['offset'] += offset_error
+						self.scales[key].setOffset(self.articles[key]['offset'])
+						
+						#print ("   New Offset:            " + str(self.articles[key]['offset']))
+
+						#print ("Offset for Scale " + str(key) + " adjusted ( " + str(offset_old) + " => " + str(self.articles[key]['offset']) + " / weight = " + str(self.get_weight(key)) + "g )")
+						print ("Offset for Scale " + str(key) + " adjusted ( " + str(offset_old) + " => " + str(self.articles[key]['offset']) + " )")
+			
+			#if (self.get_weight(key) == False):
+			#print ("SAVE " + str(self.articles[key]['offset']))
+			self.save_articles()
+				
+			return self.articles
+		except Exception as e: 
+			logging.error('Function VendingMachine.adjust_offset raised exception (' + str(e) + ')')
+			return False
+
+	def adjust_offset_thread(self):
+		try:
+			while True:
+				for key in self.articles:
+					while (self.in_transaction == True):
+						print ("Waiting for end of transaction to continue adjusting offset values. (in_transaction = " + str(self.in_transaction) + ")")
+						time.sleep(5)
+					self.adjust_offset(key)
+		except KeyboardInterrupt:
+			return False
+			
 	def run(self):
 		#try:
 
+			# start background thread to adjust offste values
+			t_adjust_offset = threading.Thread(target=self.adjust_offset_thread)
+			t_adjust_offset.daemon = True
+			t_adjust_offset.start()
 
 			while True:
 				try:
@@ -1072,12 +1137,14 @@ class VendingMachine(object):
 					#	self.bridge.run()
 					
 					print ("READY FOR TRANSACTION - SHOW CARD")
+					self.in_transaction = False
 					self.bridge.display_text("Swipe your\nmember card\nto start\nshopping...")
 					key_id = self.bridge.read_key()
 					if (key_id): # avoid processing ghost keys
 						if (self.bridge.access(key_id)): # wait for key card
 							self.bridge.buzzer.beep(on_time=0.1, off_time=0, n=1, background=False)
 							print ("ACCESS GRANTED")
+							self.in_transaction = True
 							# access granted
 							
 							# Procedure: 
@@ -1221,10 +1288,13 @@ class VendingMachine(object):
 							
 							# (7) save new stock values for next transaction
 							for key in self.articles:
+								self.articles[key]['stock'] = self.transactions[key]['stock_new']
 								self.transactions[key] = { 
 															'weight_old' : self.transactions[key]['weight_new'],
 															'stock_old'  : self.transactions[key]['stock_new']
 														 }
+								
+							self.save_articles()
 							
 						else:
 							self.bridge.buzzer.beep(on_time=0.1, off_time=0.1, n=3, background=False)

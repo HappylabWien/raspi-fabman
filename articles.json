@@ -8,6 +8,7 @@
         "price": 15.9,
         "weight": 3.22,
         "stock_min": 1,
-        "product_id": "dd50b798-cf73-11e3-a0f5-b8ca3a64f8f4"
+        "product_id": "dd50b798-cf73-11e3-a0f5-b8ca3a64f8f4",
+        "stock": 3
     }
 }
