@@ -948,7 +948,7 @@ class VendingMachine(object):
 		try:
 			#pprint.pprint(self.articles)
 
-			calibration_weight = 251 # default value (coffee cup)
+			calibration_weight = 395 # default value 
 			answer = input("How heavy is your calibration weight in grams? [" + str(calibration_weight) + "] ")
 			if (answer != ""):
 				calibration_weight = float(answer)
@@ -1053,14 +1053,15 @@ class VendingMachine(object):
 			logging.error('Function VendingMachine.open_door raised exception (' + str(e) + ')')
 			return False
 			
-	def get_weight(self,key,times=10): # key is the article key from articles.json
+	def get_weight(self,key,times=3): # key is the article key from articles.json
 		try:
 			self.pe[self.articles[key]['pe_i2c_addr']].disable()
 			self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
 			self.scales[key].reset()
 
-			cut = times//5
-			values = sorted([self.scales[key].source.read() for i in range(times)])[cut:-cut]
+			#cut = times//5
+			values = sorted([self.scales[key].source.read() for i in range(times)])#[cut:-cut]
+			#pprint.pprint(values)
 			value = statistics.mean(values)
 			#value = self.scales[key].source.read()
 			
@@ -1196,10 +1197,10 @@ class VendingMachine(object):
 							#input("weiter...-> ENTER")
 							
 							# (2) open door
-							self.bridge.display_text("Access granted\n\nPlease\nopen door...")
+							self.bridge.display_text("Access granted\n\nPlease\nopen doors...")
 							#input ("Press ENTER to open the door...")
 							self.open_door()
-							self.bridge.display_text("Take items and\nclose door to\nfinish shopping")				
+							self.bridge.display_text("Take items and\nclose BOTH doors\nto finish shopping")				
 							#logging.info("Door is open.")
 							#input ("Take items and press ENTER to close the door...")
 							
@@ -1207,11 +1208,12 @@ class VendingMachine(object):
 							while (self.door_is_open()):
 								time.sleep(0.5)
 							logging.info("Door is closed - processing purchase")
-							self.bridge.display_text("Processing\nyour purchase...")
+							#self.bridge.display_text("Processing\nyour purchase...")
 							
 							# (4) measure weight at end of transaction again 
 							for key in self.articles:
 								#print("Checking Scale " + str(key) + "...")
+								self.bridge.display_text("Processing\nyour purchase:\nChecking\n" + str(key))
 								#self.bridge.display_text("Checking\n" + str(key) + "...")		
 							
 								#self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
