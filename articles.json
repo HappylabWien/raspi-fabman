@@ -4,71 +4,71 @@
         "mux_channel": 0,
         "name": "VHM Fr\u00e4ser 2-Schneider 1mm",
         "ref": 1838.6569620253165,
-        "offset": 228414.572464135,
+        "offset": 196513.5253628692,
         "price": 7.9,
         "weight": 3.39,
         "stock_min": 1,
         "product_id": "dcf77ec9-cf73-11e3-a0f5-b8ca3a64f8f4",
-        "stock": 2
+        "stock": 3
     },
     "Scale 2:32-1 (1kg)": {
         "pe_i2c_addr": 32,
         "mux_channel": 1,
         "name": "VHM Fr\u00e4ser 2-Schneider 2mm",
         "ref": 2077.938818565401,
-        "offset": 80539.07400843882,
+        "offset": 72289.11101265822,
         "price": 7.9,
         "weight": 3.22,
         "stock_min": 1,
         "product_id": "dd15a501-cf73-11e3-a0f5-b8ca3a64f8f4",
-        "stock": 2
+        "stock": 3
     },
     "Scale 3:32-8 (1kg)": {
         "pe_i2c_addr": 32,
         "mux_channel": 8,
         "name": "VHM Fr\u00e4ser 2-Schneider 3mm lang",
         "ref": 1857.335864978903,
-        "offset": 152509.38379746836,
+        "offset": 154218.24236286918,
         "price": 15.9,
         "weight": 3.2,
         "stock_min": 1,
         "product_id": "dcd71322-cf73-11e3-a0f5-b8ca3a64f8f4",
-        "stock": 2
+        "stock": 3
     },
     "Scale 4:32-9 (2kg)": {
         "pe_i2c_addr": 32,
         "mux_channel": 9,
         "name": "VHM Fr\u00e4ser 2-Schneider 6mm",
-        "ref": 769.7379746835443,
-        "offset": 20959.563924050635,
+        "ref": 770.2183622828784,
+        "offset": 2107.544665012406,
         "price": 19.9,
         "weight": 18.25,
         "stock_min": 1,
         "product_id": "ddf0e618-cf73-11e3-a0f5-b8ca3a64f8f4",
-        "stock": 2
+        "stock": 3
     },
     "Scale 5:32-2 (5kg)": {
         "pe_i2c_addr": 32,
         "mux_channel": 2,
         "name": "VHM Fr\u00e4ser 2-Schneider 6mm lang",
-        "ref": 398.74219409282705,
-        "offset": 64699.349409282695,
+        "ref": 399.24317617866006,
+        "offset": 48506.833746898265,
         "price": 39.9,
         "weight": 25.05,
         "stock_min": 1,
         "product_id": "de0f32d3-cf73-11e3-a0f5-b8ca3a64f8f4",
-        "stock": 2
+        "stock": 4
     },
     "Scale 6:32-3 (10kg)": {
         "pe_i2c_addr": 32,
         "mux_channel": 3,
         "name": "Fenella 500ml",
         "ref": 217.80126582278487,
-        "offset": 215010.3206751054,
+        "offset": -133058.86497890306,
         "price": 9.2,
         "weight": 400,
         "stock_min": 1,
         "product_id": "de842d3d-cf73-11e3-a0f5-b8ca3a64f8f4",
-        "stock": 2
+        "stock": 5
     }
 }

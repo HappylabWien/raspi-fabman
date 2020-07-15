@@ -411,6 +411,7 @@ class FabmanBridge(object):
 				return True
 			else:
 				logging.error('Bridge could not be stopped (status code ' + str(response.status_code) + ')')
+				pprint.pprint(data)
 				self.display_error()
 				return False			
 		except Exception as e: 

@@ -5,6 +5,7 @@ import pprint
 import json
 import logging
 import requests
+import os
 
 # for load cells
 # https://github.com/dcrystalj/hx711py3
@@ -692,7 +693,7 @@ class Vend(object):
 						"status": "CLOSED",  
 						"register_sale_products" : self.register_sale_products,
 						"register_sale_payments": [{
-													"register_id": "b1e198a9-f019-11e3-a0f5-b8ca3a64f8f4",              
+													"register_id": self.config['register_id'],              
 													"retailer_payment_type_id": self.config['payment_type'],
 													"amount" : total
 												  }]
@@ -707,7 +708,21 @@ class Vend(object):
 			#print (vend_api_url)
 			#print (self.vend_header)
 
-			return requests.post(vend_api_url, headers=self.vend_header, json=payload) 
+			response = requests.post(vend_api_url, headers=self.vend_header, json=payload) 
+			if response.status_code == 200:
+				response = json.loads(response.content.decode('utf-8'))
+				logging.info("Vend sale posted successfully:\n" + str(response))
+				#pprint.pprint(response)
+				return True
+			else:
+				logging.error("Vend sale FAILED (" + vend_api_url + ")")
+				logging.error("Vend header:\n" + str(self.vend_header))
+				#pprint.pprint(self.vend_header)
+				logging.error("Vend payload:\n" + str(payload))
+				#pprint.pprint(payload)
+				logging.error("Vend response:\n" + response.reason + " (status code: " + response.status_code + ")")
+				#pprint.pprint(response)
+				return False
 			
 		except Exception as e: 
 			logging.error('Function Vend.post_sale raised exception (' + str(e) + ')')
@@ -823,6 +838,7 @@ class VendingMachine(object):
 
 			self._setup()
 			
+						
 			# initialize stock values
 			for key in self.articles:
 				'''
@@ -863,8 +879,13 @@ class VendingMachine(object):
 			# beep when initialization completed
 			self.bridge.buzzer.beep(n=1)
 			
+			
+			#print("************************* SET_OUT_OF_ORDER ************************")
+			#self.set_out_of_order(1)
+			
 		except Exception as e: 
 			logging.error('Function VendingMachine.__init__ raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 
 	def _setup(self):
 		try:
@@ -899,11 +920,25 @@ class VendingMachine(object):
 								   }
 								   
 				#self.pe[self.articles[key]['pe_i2c_addr']].enable()
+				
+			self.adjust_offset()	
+			
 			self.bridge.display_text("Initialization\ncompleted.")
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine._setup raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
+	
+	def set_out_of_order(self, err_code=0):
+		message = "A critical error occured: setting out of order and exit (code = " + str(err_code) + ").\n\n"
+		message += "Dump config:\n" + str(self.config) + "\n\n"
+		message += "Dump articles:\n" + str(self.articles) + "\n\n"
+		message += "Dump transactions:\n" + str(self.transactions) + '\n\n'
+		logging.critical(message)
+		self.bridge.display_text("OUT OF ORDER\n\n\nError code: " + str(err_code))
+		self.bridge.send_email("Fabman Vending Machine: Out Of Order", message)
+		os._exit(err_code)
 	
 	def save_articles(self, filename = "articles.json"):
 		try:
@@ -915,6 +950,7 @@ class VendingMachine(object):
 			#	return False
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_articles raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 
 	def load_articles(self, filename = "articles.json"):
@@ -924,6 +960,7 @@ class VendingMachine(object):
 			return self.articles
 		except Exception as e: 
 			logging.error('Function VendingMachine.load_articles raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 
 	def save_config(self, filename = "vendingmachine.json"):
@@ -933,6 +970,7 @@ class VendingMachine(object):
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_config raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 
 	def load_config(self, filename = "vendingmachine.json"):
@@ -942,6 +980,7 @@ class VendingMachine(object):
 			return self.config
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_config raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 
 	def calibrate(self, scale_key = None): # if no scale_key is provided, all scales will be calibrated
@@ -1015,6 +1054,7 @@ class VendingMachine(object):
 			return self.articles
 		except Exception as e: 
 			logging.error('Function VendingMachine.calibrate raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 			
 	def tare(self):
@@ -1026,6 +1066,7 @@ class VendingMachine(object):
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine.setup raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 
 	def open_door(self):
@@ -1041,6 +1082,7 @@ class VendingMachine(object):
 				return False
 		except Exception as e: 
 			logging.error('Function VendingMachine.open_door raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 
 	def door_is_open(self):
@@ -1051,6 +1093,7 @@ class VendingMachine(object):
 				return True
 		except Exception as e: 
 			logging.error('Function VendingMachine.open_door raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 			
 	def get_weight(self,key,times=3): # key is the article key from articles.json
@@ -1081,6 +1124,7 @@ class VendingMachine(object):
 			
 		except Exception as e: 
 			logging.error('Function VendingMachine.get_weight raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
 			return False
 		
 	def show_weights(self):
@@ -1092,7 +1136,7 @@ class VendingMachine(object):
 			time.sleep(1)
 
 	def adjust_offset(self, scale_key = None): # if no scale_key is provided, all scales will be calibrated
-		#try:
+		try:
 			#pprint.pprint(self.articles)
 
 
@@ -1128,11 +1172,12 @@ class VendingMachine(object):
 			self.save_articles()
 				
 			return self.articles
-		#except Exception as e: 
-		#	logging.error('Function VendingMachine.adjust_offset raised exception (' + str(e) + ')')
-		#	return False
+		except Exception as e: 
+			logging.error('Function VendingMachine.adjust_offset raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
+			return False
 
-	def adjust_offset_thread(self, wait_during_transaction=30, wait_between_adjustments=60):
+	def adjust_offset_thread(self, wait_during_transaction=30, wait_between_adjustments=300):
 		try:
 			while True:
 				for key in self.articles:
@@ -1145,7 +1190,7 @@ class VendingMachine(object):
 			return False
 			
 	def run(self):
-		#try:
+		try:
 
 			# start background thread to adjust offste values
 			t_adjust_offset = threading.Thread(target=self.adjust_offset_thread)
@@ -1211,10 +1256,15 @@ class VendingMachine(object):
 							#self.bridge.display_text("Processing\nyour purchase...")
 							
 							# (4) measure weight at end of transaction again 
+							index = 1
 							for key in self.articles:
+								progress = min(99,round(index/len(self.articles)*100))
+								#print("***** PROGRESS: " + str(progress) + '%')
+								index += 1
+							
 								#print("Checking Scale " + str(key) + "...")
-								self.bridge.display_text("Processing\nyour purchase:\nChecking\n" + str(key))
-								#self.bridge.display_text("Checking\n" + str(key) + "...")		
+								#self.bridge.display_text("Processing\nyour purchase:\nChecking\n" + str(key))
+								self.bridge.display_text("Processing\nyour purchase...\n\n" + str(progress) + "%")
 							
 								#self.pe[self.articles[key]['pe_i2c_addr']].select_channel(self.articles[key]['mux_channel'])
 								#self.pe[self.articles[key]['pe_i2c_addr']].enable()
@@ -1268,6 +1318,13 @@ class VendingMachine(object):
 										self.charge['description'] = str(self.transactions[key]['description'])
 									else:
 										self.charge['description'] += " and " + self.transactions[key]['description']
+							logging.info("Create charge in Fabman")
+							
+							if (len(self.charge['description']) > 255): # if description too long for Fabman - varchar(255)
+								self.charge['description'] = str(items_charged) + " item"
+								if (items_charged > 1):
+									self.charge['description'] += "s"
+							
 							pprint.pprint(self.charge)
 							metadata = {
 										'articles'     : self.articles,
@@ -1280,7 +1337,9 @@ class VendingMachine(object):
 							#pprint.pprint (metadata)
 							#print ("----------------")
 
-							self.bridge.stop(metadata, self.charge) 
+							if (self.bridge.stop(metadata, self.charge) == False):
+								logging.error("Charge could not be sent to Fabman")
+								self.set_out_of_order(1)
 							
 							# show transaction summary on display
 							if (items_charged == 1):
@@ -1291,7 +1350,9 @@ class VendingMachine(object):
 
 							# beep and show summary
 							self.bridge.buzzer.beep(n=1)
-							self.bridge.display_text(text, 5)
+							#self.bridge.display_text(text, 5)
+							self.bridge.display_text(text)
+							time.sleep(5)
 							
 							
 							# (6) create charge in vend
@@ -1301,14 +1362,8 @@ class VendingMachine(object):
 								for key in self.transactions:
 									if (self.transactions[key]['items_taken'] > 0):
 										self.vend.add_product_to_sale(self.articles[key]['product_id'], self.transactions[key]['items_taken'], self.articles[key]['price']/(100+tax_percent)*100, self.articles[key]['price']/(100+tax_percent)*tax_percent)
-								response = self.vend.close_sale()
-								if response.status_code == 200:
-									logging.info("Vend sale posted successfully.")
-									response = json.loads(response.content.decode('utf-8'))
-									pprint.pprint(response)
-								else:
-									logging.error("Vend sale FAILED.")
-									pprint.pprint(response)
+								if (self.vend.close_sale() == False):
+									self.set_out_of_order(1)
 							
 							#input("\nPress Enter to continue...")			
 							
@@ -1347,8 +1402,9 @@ class VendingMachine(object):
 					GPIO.cleanup()
 					sys.exit()
 
-		#except Exception as e: 
-		#	logging.error('Function VendingMachine.run raised exception (' + str(e) + ')')
-		#	return False
+		except Exception as e: 
+			logging.error('Function VendingMachine.run raised exception (' + str(e) + ')')
+			self.set_out_of_order(1)
+			return False
 
 		
