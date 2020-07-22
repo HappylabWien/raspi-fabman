@@ -852,10 +852,8 @@ class VendingMachine(object):
 
 				weight = self.get_weight(key)
 
-				logging.info("Weight on " + str(key) + " = " + str(weight))
-
 				if 'stock' not in self.articles[key]:
-					self.articles[key]['stock'] = max(0,round(weight_old / self.articles[key]['weight']))
+					self.articles[key]['stock'] = max(0,round(weight / self.articles[key]['weight']))
 
 				self.transactions[key] = { 
 											'weight_old' : weight,
@@ -863,6 +861,9 @@ class VendingMachine(object):
 											'stock_old'  : self.articles[key]['stock'],
 											'stock_new'  : self.articles[key]['stock']
 										 }
+
+				logging.info("Weight on " + str(key) + " = " + str(weight) + " (" + str(self.articles[key]['stock']) + ' items á ' + str(self.articles[key]['weight']) + 'g)' )
+
 
 				'''
 				self.pe[self.articles[key]['pe_i2c_addr']].disable()
@@ -927,7 +928,7 @@ class VendingMachine(object):
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine._setup raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(2)
 			return False
 	
 	def set_out_of_order(self, err_code=0):
@@ -950,7 +951,7 @@ class VendingMachine(object):
 			#	return False
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_articles raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(3)
 			return False
 
 	def load_articles(self, filename = "articles.json"):
@@ -960,7 +961,7 @@ class VendingMachine(object):
 			return self.articles
 		except Exception as e: 
 			logging.error('Function VendingMachine.load_articles raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(4)
 			return False
 
 	def save_config(self, filename = "vendingmachine.json"):
@@ -970,7 +971,7 @@ class VendingMachine(object):
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_config raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(5)
 			return False
 
 	def load_config(self, filename = "vendingmachine.json"):
@@ -980,7 +981,7 @@ class VendingMachine(object):
 			return self.config
 		except Exception as e: 
 			logging.error('Function VendingMachine.save_config raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(6)
 			return False
 
 	def calibrate(self, scale_key = None): # if no scale_key is provided, all scales will be calibrated
@@ -1054,7 +1055,7 @@ class VendingMachine(object):
 			return self.articles
 		except Exception as e: 
 			logging.error('Function VendingMachine.calibrate raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(7)
 			return False
 			
 	def tare(self):
@@ -1066,7 +1067,7 @@ class VendingMachine(object):
 			return True
 		except Exception as e: 
 			logging.error('Function VendingMachine.setup raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(8)
 			return False
 
 	def open_door(self):
@@ -1082,7 +1083,7 @@ class VendingMachine(object):
 				return False
 		except Exception as e: 
 			logging.error('Function VendingMachine.open_door raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(9)
 			return False
 
 	def door_is_open(self):
@@ -1093,7 +1094,7 @@ class VendingMachine(object):
 				return True
 		except Exception as e: 
 			logging.error('Function VendingMachine.open_door raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(10)
 			return False
 			
 	def get_weight(self,key,times=3): # key is the article key from articles.json
@@ -1124,7 +1125,7 @@ class VendingMachine(object):
 			
 		except Exception as e: 
 			logging.error('Function VendingMachine.get_weight raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(11)
 			return False
 		
 	def show_weights(self):
@@ -1174,7 +1175,7 @@ class VendingMachine(object):
 			return self.articles
 		except Exception as e: 
 			logging.error('Function VendingMachine.adjust_offset raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(12)
 			return False
 
 	def adjust_offset_thread(self, wait_during_transaction=30, wait_between_adjustments=300):
@@ -1277,8 +1278,8 @@ class VendingMachine(object):
 								items_taken = round(weight_loss/self.articles[key]['weight'])
 								stock_new = self.transactions[key]['stock_old'] - items_taken
 								if (items_taken != 0):
-									logging.info("Stock change on " + str(key) + ": " + "{:+2d}".format(-items_taken) + " (" + self.articles[key]['name'] + ")")  
-									logging.info("New stock on " + str(key) + ": " + str(stock_new))  
+									logging.info("Stock change on " + str(key) + ": " + str(self.transactions[key]['stock_old']) + " {:+2d}".format(-items_taken) + " => " + str(stock_new) + " (" + self.articles[key]['name'] + ")")  
+									#logging.info("New stock on " + str(key) + ": " + str(stock_new))  
 								if (items_taken > 0):
 									description = str(items_taken) + " x " + self.articles[key]['name'] + " á " + "{:.2f}".format(self.articles[key]['price'])
 									price = items_taken * self.articles[key]['price']
@@ -1339,7 +1340,7 @@ class VendingMachine(object):
 
 							if (self.bridge.stop(metadata, self.charge) == False):
 								logging.error("Charge could not be sent to Fabman")
-								self.set_out_of_order(1)
+								self.set_out_of_order(13)
 							
 							# show transaction summary on display
 							if (items_charged == 1):
@@ -1363,7 +1364,7 @@ class VendingMachine(object):
 									if (self.transactions[key]['items_taken'] > 0):
 										self.vend.add_product_to_sale(self.articles[key]['product_id'], self.transactions[key]['items_taken'], self.articles[key]['price']/(100+tax_percent)*100, self.articles[key]['price']/(100+tax_percent)*tax_percent)
 								if (self.vend.close_sale() == False):
-									self.set_out_of_order(1)
+									self.set_out_of_order(14)
 							
 							#input("\nPress Enter to continue...")			
 							
@@ -1404,7 +1405,7 @@ class VendingMachine(object):
 
 		except Exception as e: 
 			logging.error('Function VendingMachine.run raised exception (' + str(e) + ')')
-			self.set_out_of_order(1)
+			self.set_out_of_order(15)
 			return False
 
 		
