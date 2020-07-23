@@ -1,0 +1,8 @@
+{
+	"api_url_base"       : "https://internal.fabman.io/api/v1/",
+	"api_token"          : "b2a94e24-8358-4914-86da-8c81396c2ab0",
+	"display"            : "sh1106",
+	"reader_type"        : "Gwiot7941E",
+	"left_button"        : 4,
+	"relay"              : 26
+}
