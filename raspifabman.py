@@ -18,6 +18,9 @@ from colorzero import Color
 # for Buzzer
 from gpiozero import Buzzer
 
+# for Buttons
+#from gpiozero import Button
+
 # for Email Alerts
 import smtplib
 from email.mime.text import MIMEText
@@ -219,6 +222,8 @@ class Relay(object):
 
 	def __del__(self):
 		try:
+			GPIO.setmode(GPIO.BCM)
+			GPIO.setup(self.signal_pin, GPIO.OUT)
 			self.off()
 			GPIO.cleanup()
 		except Exception as e: 
@@ -274,8 +279,8 @@ class Gwiot7941E(object):
 
 class FabmanBridge(object):
 
-	def __init__(self, config = None): # if no config is given read config from "fabman.json"
-		try:
+	def __init__(self, config = None, config_file = "fabman.json"): # if no config is given read config from "fabman.json"
+		#try:
 			# default values
 			self.config = {
 							"api_url_base"       : "https://fabman.io/api/v1/",
@@ -291,12 +296,17 @@ class FabmanBridge(object):
 						  }
 
 			if (config is None):
-				self.load_config()
-			else:
+				self.config_file = config_file
+				self.load_config(self.config_file)
+			else: 
+				self.config_file = None
 				#pprint.pprint(config)
 				self.config.update(config)
 
-			self.api_header = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(self.config['api_token'])}
+			if ("api_token" in self.config):
+				self.api_header = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(self.config['api_token'])}
+			else:
+				logging.warning('Not api-token defined: Cannot access Fabman via Bridge API')
 			self.session_id = None
 			self.next_heartbeat_call = time.time()
 			self.rgbled = RGBLED(self.config["led_r"], self.config["led_g"], self.config["led_b"])
@@ -315,17 +325,29 @@ class FabmanBridge(object):
 				self.chip_type = "em4102"
 			if (self.config["heartbeat_interval"] > 0):
 				self._start_heartbeat_thread()
+			'''
 			if ("stop_button" in self.config and not(self.config["stop_button"] is None)):
 				GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)  
 				GPIO.setup(self.config["stop_button"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 				GPIO.add_event_detect(self.config["stop_button"], GPIO.FALLING, callback=self._callback_stop_button, bouncetime=300)
+			'''
+			if ("left_button" in self.config and not(self.config["left_button"] is None)):
+				GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)  
+				GPIO.setup(self.config["left_button"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			if ("right_button" in self.config and not(self.config["right_button"] is None)):
+				GPIO.setmode(GPIO.BCM) #GPIO.setmode(GPIO.BOARD)  
+				GPIO.setup(self.config["right_button"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			#if ("left_button_pin" in self.config and not(self.config["left_button_pin"] is None)):
+			#	self.left_button = Button(self.config["left_button_pin"], pull_up=True, bounce_time=0.3)
+			#if ("right_button_pin" in self.config and not(self.config["right_button_pin"] is None)):
+			#	self.right_button = Button(pin=self.config["right_button_pin"], pull_up=True, bounce_time=0.3)
 			if (self.config["display"] == "sh1106"): # 1,3" I2C OLED Display
 				self.device = get_device(("--display", self.config["display"]))
 				
 			self.screen_message = ""
 			
-		except Exception as e: 
-			logging.error('Function FabmanBridge.__init__ raised exception (' + str(e) + ')')
+		#except Exception as e: 
+		#	logging.error('Function FabmanBridge.__init__ raised exception (' + str(e) + ')')
 
 	def save_config(self, filename = "fabman.json"):
 		try:
@@ -343,7 +365,7 @@ class FabmanBridge(object):
 				self.config.update(file_config)
 			return self.config
 		except Exception as e: 
-			logging.error('Function FabmanBridge.save_config raised exception (' + str(e) + ')')
+			logging.error('Function FabmanBridge.load_config raised exception (' + str(e) + ')')
 			return False
 
 	def access(self, user_id):# user_id can be email address or rfid key 
@@ -357,12 +379,15 @@ class FabmanBridge(object):
 				response = requests.post(api_url, headers=self.api_header, json=data)
 				if (response.status_code == 200 and json.loads(response.content.decode('utf-8'))['type'] == "allowed"):
 					logging.info('Bridge started successfully.')
+					#self.display_text("Access granted\n\n\n<-STOP")
 					self.rgbled.color = Color('green')
 					self.session_id = json.loads(response.content.decode('utf-8'))["sessionId"]
 					return True
 				else:
 					logging.warning('Bridge could not be started (user_id: ' + str(user_id) + ')')
 					#self.display_error("Access\ndenied")
+					#self.display_text("Access denied")
+					#self.display_text("Access denied",3)
 					return False
 			else:
 				logging.warning("No user_id set for /bridge/access")
@@ -512,7 +537,7 @@ class FabmanBridge(object):
 			#print("************interval*****" + str(self.config["display"].startswith('SSD1306')))
 			if (self.config["display"] == "sh1106"): # 1,3" I2C OLED Display
 			
-				def display_line(draw, text, font_size=12, y=0, x=0, font='C&C Red Alert [INET].ttf'):
+				def display_line(draw, text, font_size=15, y=0, x=0, font='C&C Red Alert [INET].ttf'):
 					# use custom font
 					font_path = os.path.abspath(os.path.join(os.path.dirname(__file__),'fonts', font))
 					#font2 = ImageFont.truetype(font_path, 12)
@@ -674,6 +699,7 @@ class FabmanBridge(object):
 			logging.error('Function FabmanBridge._start_heartbeat_thread raised exception (' + str(e) + ')')
 			return False
 
+	'''
 	def _callback_stop_button(self, channel):
 		try:
 			#print("self.config[stop_button] = " + str(self.config["stop_button"]))
@@ -691,20 +717,23 @@ class FabmanBridge(object):
 		except Exception as e: 
 			logging.error('Function FabmanBridge._callback_stop_button raised exception (' + str(e) + ')')
 			return False
+	'''
 	
+	'''
 	def run(self):
 		try:
 			logging.info("Bridge started.")
 			while (True):
 				if (self.is_off()):
 					logging.debug("Ready to read nfc key ...")
+					self.display_text("Show card to start")
 					key = self.read_key()
 					if (key != False and key is not None):
 						self.access(key)
 		except Exception as e: 
 			logging.error('Function FabmanBridge.run raised exception (' + str(e) + ')')
 			return False
-
+	'''
 	def send_email(self, subject, text, email_to = None):
 		try:
 		
@@ -752,12 +781,39 @@ class FabmanBridge(object):
 '''
 if __name__ == '__main__':
 
-	config = { # change default settings
-		"api_url_base"       : "https://internal.fabman.io/api/v1/", # api url base / for production systems remove "internal."
-		#"reader_type"        : "Gwiot7941E",
-		"reader_type"        : "MFRC522",
-		"api_token"          : "710ce79f-684b-40d1-a4e3-0c6e5657d910",
-		"stop_button"        : 4
+	# Bridge config
+	'''
+	Example for "bridge.json" (Use bridge API token for the equipment you want to connect to.)
+	{ 
+		"api_url_base"       : "https://fabman.io/api/v1/",
+		"api_token"          : "xxxxxxxxxxx-xxxxxxxxx-x-xxxxxxxx-xxxxxx",
+		"display"            : "sh1106",
+		"reader_type"        : "Gwiot7941E",
+		"left_button"        : 4,
+		"relay"              : 26
 	}
-	bridge = FabmanBridge(config) # of no parameter is given, read config from "fabman.json"
-	bridge.run()
+	'''
+	bridge = FabmanBridge(config_file="bridge.json")
+
+	# Handle stop button
+	def callback_left_button(channel):
+		if (bridge.is_on()):
+			logging.debug("Switching off")
+			bridge.stop()
+	GPIO.add_event_detect(bridge.config["left_button"], GPIO.FALLING, callback=callback_left_button, bouncetime=300)
+
+	# Run bridge
+	logging.info("Bridge started")
+	while (True):
+		if (bridge.is_off()):		
+			bridge.display_text("Show card to start")
+			logging.debug("Waiting for key")
+			key = bridge.read_key()
+			if (key != False and key is not None):
+				if (bridge.access(key)):
+					bridge.display_text("Access granted\n\n\n<-STOP")
+					logging.debug("Switching on")
+				else:
+					bridge.display_text("Access denied",3)
+					logging.debug("Access denied")
+
