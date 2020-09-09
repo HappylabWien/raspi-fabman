@@ -33,7 +33,7 @@ Connect the barcode scanner to a USB port of the Raspberry Pi and install the di
 
 <img src="https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosWiring.PNG" height="800" />
 
-To start the program run:
+To start the program login via ssh on `raspi-fabman.local` (username `pi`, password `raspberry`) and run:
 ```
 cd /home/pi/raspi-fabman
 python3 micropos.py
