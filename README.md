@@ -11,9 +11,26 @@ The sales process is then very simple and intuitive:
 2. Swipe a member card to complete the sale
 3. An invoice line is then automatically created for the member.
 
-The article list with the prices are saved in a CSV file. An unique number is assigned to each article, which can then be printed out as a barcode. Here's an example for `articles.csv` (columns: id for barcode, article name, article price):
+The article list with the prices are saved in a CSV file. An unique number is assigned to each article, which can then be printed out as a barcode. Here's an example for `/home/pi/raspi-fabman/articles.csv` (columns: id for barcode, article name, article price):
 ```
 1234567,Schraube,1.00
 7654321,Plexiglas,2.00
 1111111,Fräser,3.00
+```
+
+Configure your fabman settings in `/home/pi/raspi-fabman/fabman.json`:
+```
+{
+	"api_url_base"       : "https://fabman.io/api/v1/",
+	"reader_type"        : "MFRC522",
+	"display"            : "sh1106",
+	"api_token"          : "XXXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXX"
+}
+```
+You just need to set the the `api_token`.
+
+To start the program run:
+```
+cd /home/pi/raspi-fabman
+python3 micropos.py
 ```
