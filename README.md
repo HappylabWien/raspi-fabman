@@ -31,7 +31,7 @@ You just need to set the `api_token`.
 
 Connect the barcode scanner to a USB port of the Raspberry Pi and install the display and the card reader according to the wiring plan below.
 
-![MicroPOS wiring](https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosWiring.PNG =100x200)
+<img src="https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosWiring.PNG" height="800" />
 
 To start the program run:
 ```
