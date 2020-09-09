@@ -29,6 +29,10 @@ Configure your fabman settings in `/home/pi/raspi-fabman/fabman.json`:
 ```
 You just need to set the the `api_token`.
 
+Connect the barcode scanner to a USB port of the Raspberry Pi and install the display and the card reader according to the wiring plan below.
+
+![MicroPOS wiring](https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosWiring.PNG)
+
 To start the program run:
 ```
 cd /home/pi/raspi-fabman
