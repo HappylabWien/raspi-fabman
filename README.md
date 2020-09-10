@@ -22,6 +22,12 @@ Connect the barcode scanner to a USB port of the Raspberry Pi and install the di
 
 <img src="https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosWiring.PNG" height="800" />
 
+3D-Printed Enclosure:
+- STL-Files: *coming soon*
+- [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46175.html)
+
+*Photos coming soon*
+
 ### Software Installation
 
 You can download [this]() image (*coming soon*) and install it on your SD card. These [instructions](https://www.raspberrypi.org/documentation/installation/installing-images/) can be useful.
@@ -67,9 +73,3 @@ If you like to start MicroPOS automatically during the boot process of the Raspb
 runuser -l pi -c "cd /home/pi/raspi-fabman;/usr/bin/python3 /home/pi/raspi-fabman/micropos.py >> /home/pi/raspi-fabman/log/micropos.log 2>&1 &"
 ```
 
-### 3D-Printed Enclosure ###
-
-- STL-Files: *coming soon*
-- [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46175.html)
-
-*Photo coming soon*
