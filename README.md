@@ -66,3 +66,10 @@ If you like to start MicroPOS automatically during the boot process of the Raspb
 ```
 runuser -l pi -c "cd /home/pi/raspi-fabman;/usr/bin/python3 /home/pi/raspi-fabman/micropos.py >> /home/pi/raspi-fabman/log/micropos.log 2>&1 &"
 ```
+
+### 3D-Printed Enclosure ###
+
+- STL-Files: *coming soon*
+- [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46175.html)
+
+*Photo coming soon*
