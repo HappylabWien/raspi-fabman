@@ -1,6 +1,6 @@
 # raspi-fabman
 
-**This project is under development and not yet tested!!!**
+**This project is under development and not yet tested!!! Use it at your own risk.**
 
 ## MicroPOS
 
