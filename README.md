@@ -43,3 +43,7 @@ To start the program login via ssh on `raspi-fabman.local` (username `pi`, passw
 cd /home/pi/raspi-fabman
 python3 micropos.py
 ```
+If you like to start MicroPOS automatically during the boot process of the Raspberry Pi add the following line to `/etc/rc.local` *before* the line `exit 0`:
+```
+runuser -l pi -c "cd /home/pi/raspi-fabman;/usr/bin/python3 /home/pi/raspi-fabman/micropos.py >> /home/pi/raspi-fabman/log/micropos.log 2>&1 &"
+```
