@@ -36,9 +36,10 @@ Connect the barcode scanner to a USB port of the Raspberry Pi and install the di
 
 #### Enclosure
 
-3D-Printed Enclosure:
-- STL-Files: *coming soon*
-- [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46175.html)
+3D-printed enclosure:
+- STL-Files: [bottom](https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosEnclosureBottom.stl) and [cover](https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosEnclosureCover.stl)
+- [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46209.html) (16x)
+- [Barcode label for Reset an Undo](https://github.com/HappylabWien/raspi-fabman/blob/master/barcodes_RESET_UNDO.pdf)
 
 *Photos coming soon*
 
