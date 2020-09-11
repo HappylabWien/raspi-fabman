@@ -45,6 +45,8 @@ Connect the barcode scanner to a USB port of the Raspberry Pi and install the di
 - [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46209.html) (16x)
 - [Barcode label for Reset an Undo](https://github.com/HappylabWien/raspi-fabman/blob/master/barcodes_RESET_UNDO.pdf)
 
+<img src="https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPOS_inside.jpg" height="400" />
+
 ### Software Installation
 
 #### Install Image File
