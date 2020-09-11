@@ -46,7 +46,7 @@ Connect the barcode scanner to a USB port of the Raspberry Pi and install the di
 
 #### Install Image File
 
-You can download [this]() image (*coming soon*) and install it on your SD card. These [instructions](https://www.raspberrypi.org/documentation/installation/installing-images/) can be useful.
+You can [download this image (zip-file, ca. 1.3 GB)](), unzip it and install it on your SD card (min. size 8 GB). Here you find detailed [instructions](https://www.raspberrypi.org/documentation/installation/installing-images/) how to use the Raspberry Pi imager for this purpose.
 
 #### Configure WiFi
 
