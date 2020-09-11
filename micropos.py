@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 
 class MicroPOS(object): # combination of port expander and two multiplexers for multiple hx711 scales
 
-	def __init__(self, bridge, input_device = '/dev/input/event0', inventory_file = 'articles.csv', reset_code = 'RESET', undo_code = 'UNDO', timeout = 30, currency = "EUR", pin_reset_button = None):	
+	def __init__(self, bridge, input_device = '/dev/input/event0', inventory_file = 'articles.csv', reset_code = 'RESET', undo_code = 'UNDO', timeout = 30, currency = "EUR", pin_reset_button = None, pin_undo_button = None):	
 
 		# setup scanner
 		self.scanner = InputDevice(input_device)
@@ -47,6 +47,11 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 			GPIO.setup(pin_reset_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 			GPIO.add_event_detect(pin_reset_button, GPIO.FALLING, callback=self._callback_reset_button, bouncetime=300)
 
+		self.pin_undo_button = pin_undo_button
+		if (pin_undo_button is not None):
+			GPIO.setmode(GPIO.BCM)
+			GPIO.setup(pin_undo_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+			GPIO.add_event_detect(pin_undo_button, GPIO.FALLING, callback=self._callback_undo_button, bouncetime=300)
 
 	def __del__(self):
 		#self.bridge.display_text("Goodbye!")
@@ -246,6 +251,11 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
 		self.reset_sale()
 		self.update_display()
 			
+	def _callback_undo_button(self, channel):
+		print("undo button pressed")
+		self.undo()
+		#self.update_display()
+			
 if __name__ == '__main__':
 
 	from raspifabman import FabmanBridge
@@ -314,7 +324,7 @@ if __name__ == '__main__':
 	}
 	#bridge = FabmanBridge(config) # of no parameter is given, read config from "fabman.json"
 	bridge = FabmanBridge() # of no parameter is given, read config from "fabman.json"
-	pos = MicroPOS(bridge, timeout=30, pin_reset_button=4)
+	pos = MicroPOS(bridge, timeout=30, pin_reset_button=4, pin_undo_button=None)
 
 	t_read_key = threading.Thread(target=thread_read_key, daemon=True)
 	t_read_key.start()

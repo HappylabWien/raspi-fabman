@@ -4,5 +4,6 @@
 	"display"            : "sh1106",
 	"reader_type"        : "Gwiot7941E",
 	"left_button"        : 4,
+	"right_button"       : 24,
 	"relay"              : 26
 }

@@ -8,9 +8,9 @@ Minimal Example for Fabman Bridge:
 '''
 
 import RPi.GPIO as GPIO
-import time, logging
-from raspifabman import FabmanBridge
-from signal import pause
+import time, logging, pprint
+from raspifabman import FabmanBridge, Fabman
+#from signal import pause
 
 # Bridge config
 '''
@@ -21,6 +21,7 @@ Example for "bridge.json" (Use bridge API token for the equipment you want to co
 	"display"            : "sh1106",
 	"reader_type"        : "Gwiot7941E",
 	"left_button"        : 4,
+	"right_button"       : 24,
 	"relay"              : 26
 }
 '''
@@ -31,6 +32,7 @@ def callback_left_button(channel):
 	if (bridge.is_on()):
 		logging.debug("Switching off")
 		bridge.stop()
+		bridge.relay.off()
 GPIO.add_event_detect(bridge.config["left_button"], GPIO.FALLING, callback=callback_left_button, bouncetime=300)
 
 # Run bridge
@@ -44,6 +46,7 @@ while (True):
 			if (bridge.access(key)):
 				bridge.display_text("Access granted\n\n\n<-STOP")
 				logging.debug("Switching on")
+				bridge.relay.on()
 			else:
 				bridge.display_text("Access denied",3)
 				logging.debug("Access denied")

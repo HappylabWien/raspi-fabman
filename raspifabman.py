@@ -59,8 +59,8 @@ class Fabman(object):
 			else:
 				logging.error('Could not fetch account id')
 			#pprint.pprint(json.loads(response.content.decode('utf-8')))
-			self.response = {}
-			self.HTTP_OK = (200, 201, 204)
+		self.response = {}
+		self.HTTP_OK = (200, 201, 204)
 
 	def get(self, api_endpoint, id=None, query_string='limit=50'): # fetch entry
 		if (id is None):
@@ -186,6 +186,12 @@ class Fabman(object):
 								 }
 		return resources
 	
+	def get_training_courses(self):
+		if (self.get(api_endpoint="training-courses", id=None, query_string="account="+str(self.account_id))):
+			return self.response
+		else:
+			return False
+
 class Relay(object):
 
 	def __init__(self, signal_pin = 26, state = 0):
@@ -194,6 +200,7 @@ class Relay(object):
 			self.state = state
 			GPIO.setmode(GPIO.BCM)
 			GPIO.setup(self.signal_pin, GPIO.OUT)
+			self.off()
 		except Exception as e: 
 			logging.error('Function Relay.__init__ raised exception (' + str(e) + ')')
 
