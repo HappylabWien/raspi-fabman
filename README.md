@@ -12,7 +12,11 @@ We will gradually expand the list and we look forward to your feedback.
 
 ## MicroPOS
 
-MicroPOS is a simple point of sale solution for Fabman based on a Raspberry Pi. The sales process is then very simple and intuitive:
+MicroPOS is a simple point of sale solution for Fabman based on a Raspberry Pi. 
+
+<img src="https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPOS.jpg" height="400" />
+
+The sales process is then very simple and intuitive:
 1. Scan the items you want
 2. Swipe a member card to complete the sale
 3. An invoice line is then automatically created for the member.
@@ -40,8 +44,6 @@ Connect the barcode scanner to a USB port of the Raspberry Pi and install the di
 - STL-Files: [bottom](https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosEnclosureBottom.stl) and [cover](https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosEnclosureCover.stl)
 - [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46209.html) (16x)
 - [Barcode label for Reset an Undo](https://github.com/HappylabWien/raspi-fabman/blob/master/barcodes_RESET_UNDO.pdf)
-
-*Photos coming soon*
 
 ### Software Installation
 
