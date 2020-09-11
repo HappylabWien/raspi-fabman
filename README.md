@@ -50,7 +50,20 @@ You can download [this]() image (*coming soon*) and install it on your SD card. 
 
 #### Configure WiFi
 
-Prior to the first boot you need to set up the WiFi configuration. Therefore, follow these [instructions](https://www.raspberrypi.org/documentation/configuration/wireless/headless.md). When you have done this, insert the SD card into the Raspberry and power it on. It will now automatically connect to your WiFi and receive an IP address from your DHCP server. 
+Prior to the first boot you need to set up the WiFi configuration. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password:
+```
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=<Insert 2 letter ISO 3166-1 country code here>
+
+network={
+ ssid="<Name of your wireless LAN>"
+ psk="<Password for your wireless LAN>"
+}
+```
+If needed, you find more detailed istructions [here](https://www.raspberrypi.org/documentation/configuration/wireless/headless.md). 
+
+When you have done this, insert the SD card into the Raspberry and power it on. It will now automatically connect to your WiFi and receive an IP address from your DHCP server. 
 
 You can login via ssh on `raspi-fabman.local` with username `pi` and password `raspberry`.
 For security reasons you are strongly advised to change the password of the default user on your Raspberry Pi according to this [Howto](https://www.theurbanpenguin.com/raspberry-pi-changing-the-default-users-password-and-creating-addtional-accounts/).
