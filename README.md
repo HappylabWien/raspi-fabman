@@ -44,6 +44,8 @@ Connect the barcode scanner to a USB port of the Raspberry Pi and install the di
 - STL-Files: [bottom](https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosEnclosureBottom.stl) and [cover](https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPosEnclosureCover.stl)
 - [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46209.html) (16x)
 - [Barcode label for Reset an Undo](https://github.com/HappylabWien/raspi-fabman/blob/master/barcodes_RESET_UNDO.pdf)
+   - Scan RESET to cancel current sale
+   - Scan UNDO to remove the last item you scanned from the cart
 
 <img src="https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPOS_inside.jpg" height="600" />
 
