@@ -4,6 +4,7 @@
 
 Specific use cases are described in detail below:
 - [MicroPOS](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#micropos): Point of sale solution for Fabman
+- [Vending Machine](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#): Vending machine to sell consumables which charges automatically via Fabman
 - *...more use cases coming soon...*
 
 We will gradually expand the list and we look forward to your feedback.
@@ -121,3 +122,14 @@ If you like to start MicroPOS automatically during the boot process of the Raspb
 runuser -l pi -c "cd /home/pi/raspi-fabman;/usr/bin/python3 /home/pi/raspi-fabman/micropos.py >> /home/pi/raspi-fabman/log/micropos.log 2>&1 &"
 ```
 
+## Vending Machine
+
+We are currently working on an open source extension for Fabman for material sales. In principle, it is a cabinet with many scales inside. The products are placed on the scales.
+
+The use case then looks like this for the members:
+1. Open the cabinet using a chip card
+2. Remove the required items
+3. Close the cabinet door
+3. Weighing is done before and after the transaction. The system therefore knows who has withdrawn how many of which articles. Charges are then automatically generated in Fabman for the articles.
+
+The system is currently being tested at [Happylab](https://www.happylab.at) in Vienna. As soon as I find the time, I'll document it here. Thank you for your patience!
