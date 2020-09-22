@@ -4,7 +4,7 @@
 
 Specific use cases are described in detail below:
 - [MicroPOS](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#micropos): Point of sale solution for Fabman
-- [Vending Machine](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#): Vending machine to sell consumables which charges automatically via Fabman
+- [Vending Machine](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#vending-machine): Vending machine to sell consumables which charges automatically via Fabman
 - *...more use cases coming soon...*
 
 We will gradually expand the list and we look forward to your feedback.
