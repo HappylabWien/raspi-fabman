@@ -1,6 +1,6 @@
 # raspi-fabman
 
-[Fabman](https://fabman.io) is an all-in-one makerspace management solution. It is the "operating system" for makerspaces, fab labs, coworking spaces or school workshops. It helps to manage machines and members easily, safely & efficiently. `raspi-faman` is an open source library, with the help of which you can build your own [Fabman](https://fabman.io)-compatible hardware. 
+[Fabman](https://fabman.io) is an all-in-one makerspace management solution. It is the "operating system" for makerspaces, fab labs, coworking spaces or school workshops. It helps to manage machines and members easily, safely & efficiently. `raspi-faman` is an open source library written in python3, with the help of which you can build your own [Fabman](https://fabman.io)-compatible hardware. 
 
 Specific use cases are described in detail below:
 - [MicroPOS](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#micropos): Point of sale solution for Fabman
