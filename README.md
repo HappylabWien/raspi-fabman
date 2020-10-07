@@ -13,7 +13,7 @@ We will gradually expand the list and we look forward to your feedback.
 
 ### Software Installation
 
-All of the above use cases are based on this library. The first thing to do is to install the library on your Raspberry Pi as follows.
+All of the above use cases are based on this library running on a [RasPi 3 B+](https://www.amazon.de/UCreate-Raspberry-Pi-Desktop-Starter/dp/B07BNPZVR7). The first thing to do is to install the library on your Raspberry Pi as follows.
 
 #### Install Image File
 
