@@ -1,5 +1,7 @@
 # raspi-fabman
 
+**This project is under development and not yet tested!!! Use it at your own risk.**
+
 [Fabman](https://fabman.io) is an all-in-one makerspace management solution. It is the "operating system" for makerspaces, fab labs, coworking spaces or school workshops. It helps to manage machines and members easily, safely & efficiently. `raspi-faman` is an open source library written in python3, with the help of which you can build your own [Fabman](https://fabman.io)-compatible hardware. 
 
 Specific use cases are described in detail below:
@@ -9,7 +11,40 @@ Specific use cases are described in detail below:
 
 We will gradually expand the list and we look forward to your feedback.
 
-**This project is under development and not yet tested!!! Use it at your own risk.**
+### Software Installation
+
+All of the above use cases are based on this library. The first thing to do is to install the library on your Raspberry Pi as follows.
+
+#### Install Image File
+
+You can [download this image (zip-file, ca. 1.3 GB)](https://drive.google.com/file/d/11m_erBqufvHFaryymkIm5_6_yDtTD6Tx/view?usp=sharing), unzip it and install it on your SD card (min. size 8 GB). We suggest to use the [Raspberry Pi Imager](https://www.raspberrypi.org/downloads/) for this purpose.
+
+#### Configure WiFi
+
+Prior to the first boot you need to set up the WiFi configuration. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password:
+```
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=<Insert 2 letter ISO 3166-1 country code here>
+
+network={
+ ssid="<Name of your wireless LAN>"
+ psk="<Password for your wireless LAN>"
+}
+```
+If needed, you find more detailed istructions [here](https://www.raspberrypi.org/documentation/configuration/wireless/headless.md). 
+
+When you have done this, insert the SD card into the Raspberry and power it on. It will now automatically connect to your WiFi and receive an IP address from your DHCP server. 
+
+You can login via ssh on `raspi-fabman.local` with username `pi` and password `raspberry`.
+For security reasons you are strongly advised to change the password of the default user on your Raspberry Pi according to this [Howto](https://www.theurbanpenguin.com/raspberry-pi-changing-the-default-users-password-and-creating-addtional-accounts/).
+
+#### Update raspi-fabman Library
+
+Get the latest version of the `raspi-fabman` library:
+- Login to your Raspberry Pi via ssh (user pi)
+- go to the fabman directory: `cd /home/pi/raspi-fabman`
+- get newest version: `git pull origin master`
 
 ## MicroPOS
 
@@ -50,40 +85,9 @@ Connect the barcode scanner to a USB port of the Raspberry Pi and install the di
 
 <img src="https://github.com/HappylabWien/raspi-fabman/blob/master/MicroPOS_inside.jpg" height="600" />
 
-### Software Installation
-
-#### Install Image File
-
-You can [download this image (zip-file, ca. 1.3 GB)](https://drive.google.com/file/d/11m_erBqufvHFaryymkIm5_6_yDtTD6Tx/view?usp=sharing), unzip it and install it on your SD card (min. size 8 GB). We suggest to use the [Raspberry Pi Imager](https://www.raspberrypi.org/downloads/) for this purpose.
-
-#### Configure WiFi
-
-Prior to the first boot you need to set up the WiFi configuration. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password:
-```
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
-country=<Insert 2 letter ISO 3166-1 country code here>
-
-network={
- ssid="<Name of your wireless LAN>"
- psk="<Password for your wireless LAN>"
-}
-```
-If needed, you find more detailed istructions [here](https://www.raspberrypi.org/documentation/configuration/wireless/headless.md). 
-
-When you have done this, insert the SD card into the Raspberry and power it on. It will now automatically connect to your WiFi and receive an IP address from your DHCP server. 
-
-You can login via ssh on `raspi-fabman.local` with username `pi` and password `raspberry`.
-For security reasons you are strongly advised to change the password of the default user on your Raspberry Pi according to this [Howto](https://www.theurbanpenguin.com/raspberry-pi-changing-the-default-users-password-and-creating-addtional-accounts/).
-
-#### Update raspi-fabman Library
-
-Get the latest version of the `raspi-fabman` library:
-- Login to your Raspberry Pi via ssh (user pi)
-- go to the fabman directory: `cd /home/pi/raspi-fabman`
-- get newest version: `git pull origin master`
-
 ### Configuration
+
+Before you can start with the configuration, the library must be available on your Raspberry Pi. If you have not already done so, please follow the steps in the section [Software Installation](https://github.com/HappylabWien/raspi-fabman#software-installation) before continuing.
 
 #### Connect to Fabman
 
