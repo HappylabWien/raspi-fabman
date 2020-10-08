@@ -12,15 +12,15 @@ Specific use cases are described in detail below:
 
 We will gradually expand the list and we look forward to your feedback.
 
-### Software Installation
+## Software Installation
 
 All of the above use cases are based on this library running on a [RasPi 3 B+](https://www.amazon.de/UCreate-Raspberry-Pi-Desktop-Starter/dp/B07BNPZVR7). The first thing to do is to install the library on your Raspberry Pi as follows.
 
-#### Install Image File
+### Install Image File
 
 You can [download this image (zip-file, ca. 1.3 GB)](https://drive.google.com/file/d/11m_erBqufvHFaryymkIm5_6_yDtTD6Tx/view?usp=sharing), unzip it and install it on your SD card (min. size 8 GB). We suggest to use the [Raspberry Pi Imager](https://www.raspberrypi.org/downloads/) for this purpose.
 
-#### Configure WiFi
+### Configure WiFi
 
 Prior to the first boot you need to set up the WiFi configuration. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password):
 ```
@@ -40,7 +40,7 @@ When you have done this, insert the SD card into the Raspberry and power it on. 
 You can login via ssh on `raspi-fabman.local` with username `pi` and password `raspberry`.
 For security reasons you are strongly advised to change the password of the default user on your Raspberry Pi according to this [Howto](https://www.theurbanpenguin.com/raspberry-pi-changing-the-default-users-password-and-creating-addtional-accounts/).
 
-#### Update raspi-fabman Library
+### Update raspi-fabman Library
 
 Get the latest version of the `raspi-fabman` library:
 - Login to your Raspberry Pi via ssh (user pi)
@@ -146,3 +146,13 @@ The use case then looks like this for the members:
 3. Weighing is done before and after the transaction. The system therefore knows who has withdrawn how many of which articles. Charges are then automatically generated in Fabman for the articles.
 
 The system is currently being tested at [Happylab](https://www.happylab.at) in Vienna. As soon as I find the time, I'll document it here. Thank you for your patience!
+
+## Hardware Options
+
+### 125kHz EM4100 RFID Support
+
+If you want to support 125kHz EM4100 RFID chips instead of NFC you need to replace the MFRC522 reader by the [Gwiot7941E reader](https://www.amazon.de/gp/product/B082FYKD4B). The library doesn't support to run both readers at the same time. Wire the 
+
+Set the parameter `reader_type` in `/home/pi/raspi-fabman/fabman.json` to `Gwiot7941E` (instead of `MFRC522`) and wire the reader as shown in the following schematics.
+
+*...wiring scheme coming soon...*
