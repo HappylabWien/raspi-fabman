@@ -47,6 +47,8 @@ Get the latest version of the `raspi-fabman` library:
 - go to the fabman directory: `cd /home/pi/raspi-fabman`
 - get newest version: `git pull origin master`
 
+Now continue with the instructions for the specific use case you want to implement: go to [RasPi Bridge](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#raspi-bridge), [MicroPOS](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#micropos), or [Vending Machine](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#vending-machine)
+
 ## RasPi Bridge
 
 RasPi Bridge is an open source alternative to the Fabman Bridge. It currently only offers the essential basic functions of a Fabman Bridge (checking authorizations, switching a device on / off). The source code can, however, be adapted and expanded as required. The RasPi Bridge is primarily intended as a basis for customer-specific hardware integrations that cannot be covered with the standard Fabman Bridge.
