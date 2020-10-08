@@ -123,7 +123,7 @@ runuser -l pi -c "cd /home/pi/raspi-fabman;/usr/bin/python3 /home/pi/raspi-fabma
 
 Use the following `/home/pi/raspi-fabman/bridge.py` as basis for further development:
 
-```
+```python
 #!/usr/bin/python3
 
 '''
