@@ -22,7 +22,7 @@ You can [download this image (zip-file, ca. 1.3 GB)](https://drive.google.com/fi
 
 #### Configure WiFi
 
-Prior to the first boot you need to set up the WiFi configuration. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password:
+Prior to the first boot you need to set up the WiFi configuration. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password):
 ```
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
