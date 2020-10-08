@@ -47,7 +47,7 @@ Get the latest version of the `raspi-fabman` library:
 - go to the fabman directory: `cd /home/pi/raspi-fabman`
 - get newest version: `git pull origin master`
 
-Now continue with the instructions for the specific use case you want to implement: go to [RasPi Bridge](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#raspi-bridge), [MicroPOS](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#micropos), or [Vending Machine](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#vending-machine)
+Now continue with the instructions for the specific use case you want to implement: go to section [RasPi Bridge](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#raspi-bridge), [MicroPOS](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#micropos), or [Vending Machine](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#vending-machine)
 
 ## RasPi Bridge
 
