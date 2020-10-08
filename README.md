@@ -51,7 +51,7 @@ Get the latest version of the `raspi-fabman` library:
 
 RasPi Bridge is an open source alternative to the Fabman Bridge. It currently only offers the essential basic functions of a Fabman Bridge (checking authorizations, switching a device on / off). The source code can, however, be adapted and expanded as required. The RasPi Bridge is primarily intended as a basis for customer-specific hardware integrations that cannot be covered with the standard Fabman Bridge.
 
-* more details coming soon *
+*...more details coming soon...*
 
 ## MicroPOS
 
