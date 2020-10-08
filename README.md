@@ -53,7 +53,76 @@ Now continue with the instructions for the specific use case you want to impleme
 
 RasPi Bridge is an open source alternative to the Fabman Bridge. It currently only offers the essential basic functions of a Fabman Bridge (checking authorizations, switching a device on / off). The source code can, however, be adapted and expanded as required. The RasPi Bridge is primarily intended as a basis for customer-specific hardware integrations that cannot be covered with the standard Fabman Bridge.
 
-*...more details coming soon...*
+<img src="https://github.com/HappylabWien/raspi-fabman/blob/master/RasPiBridge.jpg" height="400" />
+
+Functionality:
+1. Swipe member card
+2. If access is granted, the relay is switched on
+3. Press the button to switch off
+
+### Hardware Setup
+
+#### Bill of Materials
+
+All you need is 
+- a [RasPi 3 B+](https://www.amazon.de/UCreate-Raspberry-Pi-Desktop-Starter/dp/B07BNPZVR7), 
+- a [display](https://www.amazon.de/AZDelivery-Display-Arduino-Raspberry-Gratis/dp/B078J78R45), 
+- a [push button](https://www.amazon.de/dp/B08CDJY57F) (basic soldering skills required to solder jumper wires to the contact pins of the push button), 
+- a [card reader module](https://www.amazon.de/RFID-Arduino-deutscher-Anleitung-RFID-Schl%C3%BCsselanh%C3%A4nger/dp/B00L6Z14T4), and
+- some [jumper wires (female to female)](https://www.amazon.de/AZDelivery-Jumper-Arduino-Raspberry-Breadboard/dp/B07KYHBVR7)
+
+#### Wiring
+
+Connect the barcode scanner to a USB port of the Raspberry Pi and install the display and the card reader according to the wiring plan below. **Attention: There are two versions of the OLED display with different pinouts. On some the pins VCC and GND can also be positioned in reverse order. Please take this into account when wiring!**
+
+<img src="https://github.com/HappylabWien/raspi-fabman/blob/master/RasPiBridgeWiring.PNG" height="800" />
+
+#### Enclosure
+
+3D-printed enclosure:
+- STL-Files: [bottom](https://github.com/HappylabWien/raspi-fabman/blob/master/RasPiBridgeEnclosureBottom.stl) and [cover](https://github.com/HappylabWien/raspi-fabman/blob/master/RasPiBridgeEnclosureCover.stl)
+- [Matching Screws](https://minischrauben.com/blech-holzschrauben-bund-linsenkopf--46209.html) (20x)
+
+<img src="https://github.com/HappylabWien/raspi-fabman/blob/master/RasPiBridge_inside.jpg" height="600" />
+
+### Configuration
+
+Before you can start with the configuration, the library must be available on your Raspberry Pi. If you have not already done so, please follow the steps in the section [Software Installation](https://github.com/HappylabWien/raspi-fabman#software-installation) before continuing.
+
+#### Connect to Fabman
+
+[Create a Fabman Bridge API key](https://help.fabman.io/article/32-create-a-bridge-api-key) for your corresponding equipment in Fabman. If it doesn’t yet exist, create a new equipment in Fabman first and then create an API key for it. 
+
+Login to the Raspberry Pi (`raspi-fabman.local`) via ssh and configure your fabman settings in `/home/pi/raspi-fabman/fabman.json`:
+```
+{
+	"api_url_base"       : "https://fabman.io/api/v1/",
+	"reader_type"        : "MFRC522",
+	"display"            : "sh1106",
+	"api_token"          : "XXXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXX",
+	"left_button"        : 24,
+	"relay"              : 26
+
+}
+```
+You just need to set the `api_token` created before.
+
+### Run RasPi Bridge
+
+To start the program run:
+```
+cd /home/pi/raspi-fabman
+python3 bridge.py
+```
+
+If you like to start MicroPOS automatically during the boot process of the Raspberry Pi add the following line to `/etc/rc.local` *before* the line `exit 0`:
+```
+runuser -l pi -c "cd /home/pi/raspi-fabman;/usr/bin/python3 /home/pi/raspi-fabman/bridge.py >> /home/pi/raspi-fabman/log/bridge.log 2>&1 &"
+```
+
+### Add Custom Features to RasPi Bridge
+
+*...coming soon...*
 
 ## MicroPOS
 
