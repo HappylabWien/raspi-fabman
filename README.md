@@ -5,6 +5,7 @@
 [Fabman](https://fabman.io) is an all-in-one makerspace management solution. It is the "operating system" for makerspaces, fab labs, coworking spaces or school workshops. It helps to manage machines and members easily, safely & efficiently. `raspi-faman` is an open source library written in python3, with the help of which you can build your own [Fabman](https://fabman.io)-compatible hardware. 
 
 Specific use cases are described in detail below:
+- [RasPi Bridge](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#raspi-bridge): Open source alternative to the [Fabman Bridge](https://shop.fabman.io/products/fabman-bridge-v2), primarily intended as a basis for customer-specific hardware integrations that cannot be covered with the standard Fabman Bridge.
 - [MicroPOS](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#micropos): Point of sale solution for Fabman
 - [Vending Machine](https://github.com/HappylabWien/raspi-fabman/blob/master/README.md#vending-machine): Vending machine to sell consumables which charges automatically via Fabman
 - *...more use cases coming soon...*
@@ -45,6 +46,12 @@ Get the latest version of the `raspi-fabman` library:
 - Login to your Raspberry Pi via ssh (user pi)
 - go to the fabman directory: `cd /home/pi/raspi-fabman`
 - get newest version: `git pull origin master`
+
+## RasPi Bridge
+
+RasPi Bridge is an open source alternative to the Fabman Bridge. It currently only offers the essential basic functions of a Fabman Bridge (checking authorizations, switching a device on / off). The source code can, however, be adapted and expanded as required. The RasPi Bridge is primarily intended as a basis for customer-specific hardware integrations that cannot be covered with the standard Fabman Bridge.
+
+* more details coming soon *
 
 ## MicroPOS
 
