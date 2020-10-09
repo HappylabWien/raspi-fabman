@@ -263,6 +263,13 @@ The system is currently being tested at [Happylab](https://www.happylab.at) in V
 
 If you want to support 125kHz EM4100 RFID chips instead of NFC you need to replace the MFRC522 reader by the [Gwiot7941E reader](https://www.amazon.de/gp/product/B082FYKD4B). The library doesn't support to run both readers at the same time. Wire the 
 
-Set the parameter `reader_type` in `/home/pi/raspi-fabman/fabman.json` to `Gwiot7941E` (instead of `MFRC522`) and wire the reader as shown in the following schematics.
+<img src="https://github.com/HappylabWien/raspi-fabman/blob/master/Gwiot7941E.jpg" height="400" />
 
-*...wiring scheme coming soon...*
+Set the parameter `reader_type` in `/home/pi/raspi-fabman/fabman.json` to `Gwiot7941E` (instead of `MFRC522`). Use the supplied cable to connect the module to the Raspberry PI. In order to be able to connect the cable to the pin headers of the Raspberry Pi, you have to solder suitable sockets to the open ends of the cable.
+
+| Pin on 7941E | Color |  Pin on RasPi   |
+|:------------:|:-----:|:---------------:|
+| 5V           | red   | Pin 4 - 5V      |
+| TXD          | green | Pin 10 - GPIO15 |
+| GND          | black | Pin 6 - GND     |
+
