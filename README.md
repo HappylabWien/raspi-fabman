@@ -82,7 +82,7 @@ All you need is
 
 #### Wiring
 
-Connect the barcode scanner to a USB port of the Raspberry Pi and install the display and the card reader according to the wiring plan below. **Attention: There are two versions of the OLED display with different pinouts. On some the pins VCC and GND can also be positioned in reverse order. Please take this into account when wiring!**
+Install display, card reader, relay, and stop button according to the wiring plan below. **Attention: There are two versions of the OLED display with different pinouts. On some the pins VCC and GND can also be positioned in reverse order. Please take this into account when wiring!**
 
 <img src="https://github.com/HappylabWien/raspi-fabman/blob/master/RasPiBridgeWiring.PNG" height="800" />
 
