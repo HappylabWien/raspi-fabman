@@ -39,7 +39,7 @@ network={
  psk="<Password for your wireless LAN>"
 }
 ```
-*Attention: Depending on the OS and editor you are creating this on, the file could have incorrect newlines or the wrong file extension so make sure you use an editor that accounts for this. On Windows we suggest to use [Notepadd++](https://notepad-plus-plus.org/).*
+*Attention: Depending on the OS and editor you are creating this on, the file could have incorrect newlines or the wrong file extension so make sure you use an editor that accounts for this. On Windows we suggest to use [Notepad++](https://notepad-plus-plus.org/).*
 
 If needed, you find more detailed istructions [here](https://www.raspberrypi.org/documentation/configuration/wireless/headless.md). 
 
