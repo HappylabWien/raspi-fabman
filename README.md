@@ -28,7 +28,7 @@ You can [download this image (zip-file, ca. 1.3 GB)](https://drive.google.com/fi
 
 ### Configure WiFi
 
-*Before* you insert the Micro SD card into your Raspberry Pi Prior to the first boot. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password):
+*Before* you insert the Micro SD card into your Raspberry Pi you need to configure your WiFi settings. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password):
 ```
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
@@ -39,6 +39,8 @@ network={
  psk="<Password for your wireless LAN>"
 }
 ```
+*Attention: Depending on the OS and editor you are creating this on, the file could have incorrect newlines or the wrong file extension so make sure you use an editor that accounts for this. On Windows we suggest to use [Notepadd++](https://notepad-plus-plus.org/).*
+
 If needed, you find more detailed istructions [here](https://www.raspberrypi.org/documentation/configuration/wireless/headless.md). 
 
 When you have done this, insert the SD card into the Raspberry and power it on. It will now automatically connect to your WiFi and receive an IP address from your DHCP server. 
