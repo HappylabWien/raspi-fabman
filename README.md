@@ -20,15 +20,15 @@ All of the above use cases are based on this library running on a [RasPi 3 B+](h
 
 You can [download this image (zip-file, ca. 1.3 GB)](https://drive.google.com/file/d/11m_erBqufvHFaryymkIm5_6_yDtTD6Tx/view?usp=sharing), unzip it and install it on your SD card (min. size 8 GB). We suggest to use the [Raspberry Pi Imager](https://www.raspberrypi.org/downloads/) for this purpose.
 
-- [Download](https://www.raspberrypi.org/downloads/), install and start the Rapberry Pi Imager
-- Insert a Micro SD card into the card reader on your Computer
-- Select "CHOOSE OS" -> "Use Custom" and select the .img-File you have just downloaded and unzipped (`MicroPOS-<date>.img`)
-- Select "CHOOSE SD CARD" and select the card you have inserted before
-- Select "WRITE" to write the image to your Micro SD card. This will take several minutes.
+1. [Download](https://www.raspberrypi.org/downloads/), install and start the Rapberry Pi Imager
+2. Insert a Micro SD card into the card reader on your Computer
+3. Select "CHOOSE OS" -> "Use Custom" and select the .img-File you have just downloaded and unzipped (`MicroPOS-<date>.img`)
+4. Select "CHOOSE SD CARD" and select the card you have inserted before
+5. Select "WRITE" to write the image to your Micro SD card. This will take several minutes.
 
 ### Configure WiFi
 
-Prior to the first boot you need to set up the WiFi configuration. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password):
+*Before* you insert the Micro SD card into your Raspberry Pi Prior to the first boot. In the /boot/ directory, open `wpa_supplicant.conf` and enter your Wifi parameters (ssid and password):
 ```
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
