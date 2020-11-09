@@ -259,7 +259,7 @@ class Gwiot7941E(object):
 					checksum_7941E = 0
 					no_of_bytes_set = 0 # for ghost key detection
 					for i in range(1, 8):
-						#print ("check byte i: " + str(int(data[i])))
+						#print ("check byte " + str(i) + ": " + str(int(data[i])))
 						if (i > 3 and int(data[i]) != 0):
 							no_of_bytes_set += 1
 							#print ("byte " + str(i) + " = " + str(int(data[i])) + " => no_of_bytes_set increased to " + str(no_of_bytes_set))
@@ -275,8 +275,27 @@ class Gwiot7941E(object):
 						checksum_ID12 ^= data[i]
 					#print ("Length of data: " + str(len(data)))
 					#pprint.pprint(data)
-					fabman_key = format(data[3],"x").zfill(2) + format(data[4],"x").zfill(2) + format(data[5],"x").zfill(2) + format(data[6],"x").zfill(2) + format(data[7],"x").zfill(2) + format(checksum_ID12,"x")
-					logging.info('Successfully read RFID key ' + fabman_key)
+					fabman_key = format(data[3],"x").zfill(2) + format(data[4],"x").zfill(2) + format(data[5],"x").zfill(2) + format(data[6],"x").zfill(2) + format(data[7],"x").zfill(2) + format(checksum_ID12,"x").zfill(2)
+					
+					'''
+					# DEBUG OUTPUT
+					print("---HEADER---")
+					print(format(data[0],"x").zfill(2) + " // 0x02 = data start")
+					print(format(data[1],"x").zfill(2) + " // length: 0x0a = 10 bytes (incl. data start und data end)")
+					print(format(data[2],"x").zfill(2) + " // card type: 0x02 = EM4100")
+					print("---ADDRESS---")
+					print(format(data[3],"x").zfill(2))
+					print(format(data[4],"x").zfill(2))
+					print(format(data[5],"x").zfill(2))
+					print(format(data[6],"x").zfill(2))
+					print(format(data[7],"x").zfill(2))
+					print("---FOOTER---")
+					print(format(checksum_ID12,"x").zfill(2) + " (gwiot: " + format(checksum_7941E,"x").zfill(2) + ") // checksum")
+					print(format(data[9],"x").zfill(2) + " // 0x03 = data end\n")
+					'''
+
+					logging.info('Successfully read RFID key ' + fabman_key)					
+
 					return fabman_key
 				else:
 					time.sleep(0.5)
@@ -292,7 +311,7 @@ class FabmanBridge(object):
 			self.config = {
 							"api_url_base"       : "https://fabman.io/api/v1/",
 							"heartbeat_interval" : 30,
-							#"stop_button"        : 4,
+							"left_button"        : 24,
 							"reader_type"        : "MFRC522",
 							"led_r"              : 17,
 							"led_g"              : 27,
@@ -307,7 +326,7 @@ class FabmanBridge(object):
 				self.load_config(self.config_file)
 			else: 
 				self.config_file = None
-				#pprint.pprint(config)
+				pprint.pprint(config)
 				self.config.update(config)
 
 			if ("api_token" in self.config):

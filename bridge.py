@@ -20,8 +20,8 @@ Example for "bridge.json" (Use bridge API token for the equipment you want to co
 	"api_token"          : "xxxxxxxxxxx-xxxxxxxxx-x-xxxxxxxx-xxxxxx",
 	"display"            : "sh1106",
 	"reader_type"        : "Gwiot7941E",
-	"left_button"        : 4,
-	"right_button"       : 24,
+	"left_button"        : 24,
+	"right_button"       : 4,
 	"relay"              : 26
 }
 '''
