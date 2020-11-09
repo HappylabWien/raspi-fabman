@@ -1,4 +1,4 @@
-import sys
+ï»¿import sys
 import RPi.GPIO as GPIO
 import time
 import pprint
@@ -861,8 +861,8 @@ class VendingMachine(object):
 											'stock_old'  : self.articles[key]['stock'],
 											'stock_new'  : self.articles[key]['stock']
 										 }
-
-				logging.info("Weight on " + str(key) + " = " + str(weight) + " (" + str(self.articles[key]['stock']) + ' items á ' + str(self.articles[key]['weight']) + 'g)' )
+									
+				logging.info("Weight on " + str(key) + " = " + str(weight) + " (" + str(self.articles[key]['stock']) + ' items Ã¡ ' + str(self.articles[key]['weight']) + 'g)' )
 
 
 				'''
@@ -1281,7 +1281,7 @@ class VendingMachine(object):
 									logging.info("Stock change on " + str(key) + ": " + str(self.transactions[key]['stock_old']) + " {:+2d}".format(-items_taken) + " => " + str(stock_new) + " (" + self.articles[key]['name'] + ")")  
 									#logging.info("New stock on " + str(key) + ": " + str(stock_new))  
 								if (items_taken > 0):
-									description = str(items_taken) + " x " + self.articles[key]['name'] + " á " + "{:.2f}".format(self.articles[key]['price'])
+									description = str(items_taken) + " x " + self.articles[key]['name'] + " Ã¡ " + "{:.2f}".format(self.articles[key]['price'])
 									price = items_taken * self.articles[key]['price']
 								else:
 									description = "n/a"
