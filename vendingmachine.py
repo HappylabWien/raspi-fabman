@@ -731,6 +731,32 @@ class Vend(object):
         except Exception as e: 
             logging.error('Function Vend.post_sale raised exception (' + str(e) + ')')
 
+    def get_products(self):
+        try:
+            vend_endpoint = "products"
+            vend_api_url = self.vend_api_url_base + vend_endpoint
+            response = requests.get(vend_api_url, headers=self.vend_header)
+
+            if response.status_code == 200:
+                response = json.loads(response.content.decode('utf-8'))
+                logging.info("Vend sale posted successfully")
+                #logging.info(str(response))
+                #pprint.pprint(response)
+                return response
+            else:
+                logging.error("Vend get_products FAILED (" + vend_api_url + ")")
+                logging.error("Vend header:\n" + str(self.vend_header))
+                #pprint.pprint(self.vend_header)
+                logging.error("Vend response:\n" + response.reason + " (status code: " + str(response.status_code) + ")")
+                #pprint.pprint(response)
+                return False
+
+                
+            return response
+        except Exception as e: 
+            logging.error('Function Vend.get_products raised exception (' + str(e) + ')')
+            return False
+
     '''
     def sell_product( # sells one product
                         self, 

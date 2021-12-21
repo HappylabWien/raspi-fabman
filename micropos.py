@@ -5,6 +5,7 @@ import time
 import pprint
 import RPi.GPIO as GPIO
 import threading
+import sys
 
 from vendingmachine import Vend
 
@@ -16,18 +17,45 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
         self.scanner = InputDevice(input_device)
         self.scanner.grab() # grab provides exclusive access to the device
         
-        # read inventory file
+        #pprint.pprint(self.inventory)  
+        #print (self.inventory['7654321'][0])   
+
+        self.bridge = bridge
+        self.bridge.display_text("Initializing\nDatabase.\n\nPlease wait...")
+        
         self.inventory = {}
+    
+        # read inventory file (default: articles.json)
         with open(inventory_file) as fin:
             #reader=csv.reader(fin, quotechar='"', skipinitialspace=True)
             reader=csv.reader(fin, quotechar='"', delimiter='\t', skipinitialspace=True)
             for row in reader:
                 self.inventory[row[0]]=row[1:]
+        if (vend is not None):
+            # read articles from vend via API and add to list of articles
+            print ("read articles from vend via API")
+            #self.bridge.display_text("Reading products\nfrom Vend.\n\nPlease wait...")
+            
+            p = vend.get_products()
+            
+            for i in vend.get_products()["products"]:
+                self.inventory[i["sku"]] = [i["name"], i["price"]+i["tax"], i["id"]]
+            #print (self.inventory["000080200109"]["price"])
+            pprint.pprint(self.inventory)
+            
+            #prod_index = 17
+            #prod_sku = p["products"][prod_index]["sku"]
+            #prod_name = p["products"][prod_index]["name"]
+            #prod_price = p["products"][prod_index]["price"] + p["products"][prod_index]["tax"]
+            #prod_vend_id = p["products"][prod_index]["id"]
+            #print (prod_sku + "\t" + prod_name + "\t" + str(prod_price) + "\t" + prod_vend_id + "\n")
+            #self.inventory[prod_sku] = [prod_name, prod_price, prod_vend_id]
+            #pprint.pprint(self.inventory)
+            
+        #self.bridge.display_text("EXIT")
+        #sys.exit()
 
-        #pprint.pprint(self.inventory)  
-        #print (self.inventory['7654321'][0])   
-
-        self.bridge = bridge
+        
         self.barcode = None
         self.sale_products = {}	
         self.reset_code = reset_code
