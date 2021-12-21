@@ -25,23 +25,20 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
         
         self.inventory = {}
     
-        # read inventory file (default: articles.json)
-        with open(inventory_file) as fin:
-            #reader=csv.reader(fin, quotechar='"', skipinitialspace=True)
-            reader=csv.reader(fin, quotechar='"', delimiter='\t', skipinitialspace=True)
-            for row in reader:
-                self.inventory[row[0]]=row[1:]
-        if (vend is not None):
-            # read articles from vend via API and add to list of articles
-            print ("read articles from vend via API")
-            #self.bridge.display_text("Reading products\nfrom Vend.\n\nPlease wait...")
+        
+        if (vend is None): # read inventory file (default: articles.json)
+            with open(inventory_file) as fin:
+                #reader=csv.reader(fin, quotechar='"', skipinitialspace=True)
+                reader=csv.reader(fin, quotechar='"', delimiter='\t', skipinitialspace=True)
+                for row in reader:
+                    self.inventory[row[0]]=row[1:]
+        else: # read invetory from vend via api
+            self.inventory = vend.get_products()
             
-            p = vend.get_products()
-            
-            for i in vend.get_products()["products"]:
-                self.inventory[i["sku"]] = [i["name"], i["price"]+i["tax"], i["id"]]
+        print (str(len(self.inventory)) + " products loaded.")
+        
             #print (self.inventory["000080200109"]["price"])
-            pprint.pprint(self.inventory)
+            #pprint.pprint(self.inventory)
             
             #prod_index = 17
             #prod_sku = p["products"][prod_index]["sku"]

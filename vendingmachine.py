@@ -733,16 +733,38 @@ class Vend(object):
 
     def get_products(self):
         try:
-            vend_endpoint = "products"
+            inventory = {}
+
+            vend_endpoint = "products?page=1"
             vend_api_url = self.vend_api_url_base + vend_endpoint
             response = requests.get(vend_api_url, headers=self.vend_header)
 
             if response.status_code == 200:
                 response = json.loads(response.content.decode('utf-8'))
                 logging.info("Vend sale posted successfully")
+                
+                print(str(response["pagination"]["pages"]) + " product pages found.")
+                print ("read page 1")
+                for i in response["products"]:
+                    inventory[i["sku"]] = [i["name"], i["price"]+i["tax"], i["id"]] 
+
+                #pprint.pprint(inventory)
+                
+                for page in range(2, response["pagination"]["pages"]+1):
+                    print ("read page " + str(page))
+                    vend_endpoint = "products?page=" + str(page)
+                    vend_api_url = self.vend_api_url_base + vend_endpoint
+                    response = requests.get(vend_api_url, headers=self.vend_header)
+                    response = json.loads(response.content.decode('utf-8'))
+                    for i in response["products"]:
+                        #pprint.pprint(i)
+                        inventory[i["sku"]] = [i["name"], i["price"]+i["tax"], i["id"]]
+
+                
+
                 #logging.info(str(response))
                 #pprint.pprint(response)
-                return response
+                return inventory
             else:
                 logging.error("Vend get_products FAILED (" + vend_api_url + ")")
                 logging.error("Vend header:\n" + str(self.vend_header))
@@ -750,9 +772,7 @@ class Vend(object):
                 logging.error("Vend response:\n" + response.reason + " (status code: " + str(response.status_code) + ")")
                 #pprint.pprint(response)
                 return False
-
                 
-            return response
         except Exception as e: 
             logging.error('Function Vend.get_products raised exception (' + str(e) + ')')
             return False
