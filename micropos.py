@@ -17,41 +17,23 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
         self.scanner = InputDevice(input_device)
         self.scanner.grab() # grab provides exclusive access to the device
         
-        #pprint.pprint(self.inventory)  
-        #print (self.inventory['7654321'][0])   
-
         self.bridge = bridge
         self.bridge.display_text("Initializing\nDatabase.\n\nPlease wait...")
         
         self.inventory = {}
-    
         
-        if (vend is None): # read inventory file (default: articles.json)
-            with open(inventory_file) as fin:
-                #reader=csv.reader(fin, quotechar='"', skipinitialspace=True)
-                reader=csv.reader(fin, quotechar='"', delimiter='\t', skipinitialspace=True)
-                for row in reader:
-                    self.inventory[row[0]]=row[1:]
-        else: # read invetory from vend via api
+        # read invetory from vend via api and add to products list
+        if (vend is not None): 
             self.inventory = vend.get_products()
+
+        # read inventory file and add to products list (default: articles.json)
+        with open(inventory_file) as fin:
+            #reader=csv.reader(fin, quotechar='"', skipinitialspace=True)
+            reader=csv.reader(fin, quotechar='"', delimiter='\t', skipinitialspace=True)
+            for row in reader:
+                self.inventory[row[0]]=row[1:]
             
         print (str(len(self.inventory)) + " products loaded.")
-        
-            #print (self.inventory["000080200109"]["price"])
-            #pprint.pprint(self.inventory)
-            
-            #prod_index = 17
-            #prod_sku = p["products"][prod_index]["sku"]
-            #prod_name = p["products"][prod_index]["name"]
-            #prod_price = p["products"][prod_index]["price"] + p["products"][prod_index]["tax"]
-            #prod_vend_id = p["products"][prod_index]["id"]
-            #print (prod_sku + "\t" + prod_name + "\t" + str(prod_price) + "\t" + prod_vend_id + "\n")
-            #self.inventory[prod_sku] = [prod_name, prod_price, prod_vend_id]
-            #pprint.pprint(self.inventory)
-            
-        #self.bridge.display_text("EXIT")
-        #sys.exit()
-
         
         self.barcode = None
         self.sale_products = {}	
@@ -84,7 +66,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
         
         self.vend = vend
 
-    def __del__(self):
+    def del__(self):
         #self.bridge.display_text("Goodbye!")
         #time.sleep(2)
         #self.bridge.display_text("")
@@ -247,7 +229,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
                 total += self.sale_products[barcode]['quantity']
         return total
 
-    def close_sale(self): # sells all products prevously added with add_product_to_sale	
+    def close_sale(self, note="MicroPOS"): # sells all products prevously added with add_product_to_sale	
         first_item = True
         description = "n/a"
         price = 0.0
@@ -269,7 +251,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
         #print ("----------------")
         
         if (self.vend is not None):
-            pprint.pprint("CLOSE SALE IN VEND - NOT TESTED YET")
+            #pprint.pprint("CLOSE SALE IN VEND - NOT TESTED YET")
             
             # create charge in vend
             
@@ -281,7 +263,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
             for barcode in self.sale_products:
                 if (self.sale_products[barcode]['quantity'] > 0):
                     self.vend.add_product_to_sale(self.sale_products[barcode]['vend_id'], self.sale_products[barcode]['quantity'], self.sale_products[barcode]['price']/(100+tax_percent)*100, self.sale_products[barcode]['price']/(100+tax_percent)*tax_percent)
-            if (self.vend.close_sale() == False):
+            if (self.vend.close_sale(note=note) == False):
                 print ("VEND SALE FAILED")
             
             #print ("VEND WARENKORB:")
@@ -321,7 +303,7 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
             
 if __name__ == '__main__':
 
-    from raspifabman import FabmanBridge
+    from raspifabman import FabmanBridge, Fabman
     #import threading
     
     
@@ -343,7 +325,16 @@ if __name__ == '__main__':
                         print("thread_read_key: Access granted")
                         pos.bridge.display_text("Processing\nsale...")
                         total = pos.get_total()
-                        pos.close_sale()
+                        
+                        
+                        if (pos.bridge.config['reader_type'] == "Gwiot7941E"):
+                            key_type = "em4102"
+                            f = Fabman(api_token="b2a94e24-8358-4914-86da-8c81396c2ab0", api_url_base="https://internal.fabman.io/api/v1/")
+                            f.get(api_endpoint='members', id=None, query_string='keyType=em4102&keyToken=' + str(key) + '&limit=1')
+                            sale_note = "Customer: " + f.response[0]['firstName'] + " " + f.response[0]['lastName'] + " (" + f.response[0]['memberNumber'] + ")"
+                            pos.close_sale(note=sale_note)                            
+                        else:
+                            pos.close_sale()
                         
                         print("thread_read_key: Cancel timeout countdown")
                         pos.t_timeout.cancel()
@@ -381,12 +372,12 @@ if __name__ == '__main__':
         pos.lock_scanner = False
         #print("Thread " + name + " finishing")
     
-    config = { # change default settings
-        "api_url_base"       : "https://internal.fabman.io/api/v1/", # api url base / for production systems remove "internal."
-        #"reader_type"        : "Gwiot7941E",
-        "reader_type"        : "MFRC522",
-        "api_token"          : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    }
+    #config = { # change default settings
+    #    "api_url_base"       : "https://internal.fabman.io/api/v1/", # api url base / for production systems remove "internal."
+    #    #"reader_type"        : "Gwiot7941E",
+    #    "reader_type"        : "MFRC522",
+    #    "api_token"          : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    #}
     #bridge = FabmanBridge(config) # of no parameter is given, read config from "fabman.json"
     bridge = FabmanBridge() # of no parameter is given, read config from "fabman.json"
     pos = MicroPOS(bridge, timeout=30, pin_reset_button=4, pin_undo_button=None, vend=Vend())

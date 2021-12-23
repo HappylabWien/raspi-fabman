@@ -682,7 +682,7 @@ class Vend(object):
                                                 "tax_id": self.config['tax_id']
                                           })
     
-    def close_sale(self): # sells all products prevously added with add_product_to_sale
+    def close_sale(self, note=""): # sells all products prevously added with add_product_to_sale
         try:
             vend_endpoint = "register_sales"
 
@@ -695,6 +695,7 @@ class Vend(object):
                         "user_id": self.config['user_id'],
                         "status": "CLOSED",  
                         "register_sale_products" : self.register_sale_products,
+                        "note" : note,
                         "register_sale_payments": [{
                                                     "register_id": self.config['register_id'],              
                                                     "retailer_payment_type_id": self.config['payment_type'],
