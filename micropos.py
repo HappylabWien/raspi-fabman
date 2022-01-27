@@ -9,7 +9,7 @@ import sys
 
 from vendingmachine import Vend
 
-class MicroPOS(object): # combination of port expander and two multiplexers for multiple hx711 scales
+class MicroPOS(object): 
 
     def __init__(self, bridge, input_device = '/dev/input/event0', inventory_file = 'articles.csv', reset_code = 'RESET', undo_code = 'UNDO', timeout = 30, currency = "EUR", pin_reset_button = None, pin_undo_button = None, vend = None):
 
@@ -115,7 +115,9 @@ class MicroPOS(object): # combination of port expander and two multiplexers for 
                     else:
                         key_lookup = u'{}'.format(scancodes.get(data.scancode)) or u'UNKNOWN:[{}]'.format(data.scancode)  # Lookup or return UNKNOWN:XX
                     if (data.scancode != 42) and (data.scancode != 28):
-                        x += key_lookup  
+                        if (str(key_lookup) != "None"):
+                            x += key_lookup  
+                            #print ("ADD KEY_LOOKUP: " + str(key_lookup) + "\n")
                     if(data.scancode == 28):
                         if (self.lock_scanner == True):
                             # discard barcodes while sale is processed (after swiping key card)
@@ -424,7 +426,7 @@ if __name__ == '__main__':
             else:
                 pos.lock_scanner = True
                 print("Unknown barcode: " + str(barcode))
-                pos.bridge.display_text("Invalid barcode")
+                pos.bridge.display_text("Invalid barcode:\n" + str(barcode))
                 time.sleep(3)
                 pos.lock_scanner = False
                 
