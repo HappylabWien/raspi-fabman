@@ -9,6 +9,8 @@ ping -c4 www.fabman.io > /dev/null
  
 if [ $? != 0 ] 
 then
-  echo "Reboot at $(/bin/date)" >> /home/pi/raspi-fabman/watchdog.log
+  echo "$(/bin/date) PING FAILED -> REBOOT" >> /home/pi/raspi-fabman/watchdog.log
   sudo /sbin/shutdown -r now
+else
+  echo "$(/bin/date) OK" >> /home/pi/raspi-fabman/watchdog.log
 fi
