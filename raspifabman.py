@@ -731,7 +731,12 @@ class FabmanBridge(object):
             heartbeat_thread.start()
         except Exception as e: 
             logging.error('Function FabmanBridge._start_heartbeat_thread raised exception (' + str(e) + ')')
+            self.next_heartbeat_call += self.config["heartbeat_interval"]
+            heartbeat_thread = threading.Timer( self.next_heartbeat_call - time.time(), self._start_heartbeat_thread )
+            heartbeat_thread.daemon = True
+            heartbeat_thread.start()
             return False
+
 
     '''
     def _callback_stop_button(self, channel):

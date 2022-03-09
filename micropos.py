@@ -389,7 +389,7 @@ if __name__ == '__main__':
 
     while True:
         barcode = pos.read_barcode()
-        #print ("pos.undo_code = " + pos.undo_code + " / barcode = " + barcode)
+        print ("pos.undo_code = " + pos.undo_code + " / barcode = " + barcode)
         if (barcode is not None):
             if (barcode == pos.reset_code):
                 print("*** RESET SALE ***")
