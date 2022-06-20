@@ -242,7 +242,13 @@ class MicroPOS(object):
             else:
                 description += " and " + str(self.sale_products[barcode]['quantity']) + " x " + self.sale_products[barcode]['description'] + " á € " + "{:.2f}".format(self.sale_products[barcode]['price'])
             #price += self.sale_products[barcode]['quantity'] * self.sale_products[barcode]['price']
+        
         # create charge in fabman
+        
+        #truncate description (length of description in fabman limited)
+        maxlength = 200
+        description = (description[:maxlength-3] + '...') if len(description) > maxlength else description
+
         self.charge = { 'description' : description, 'price' : self.get_total() }
         self.metadata = {
                     'articles'     : self.sale_products,
