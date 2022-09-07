@@ -732,7 +732,8 @@ class Vend(object):
         except Exception as e: 
             logging.error('Function Vend.post_sale raised exception (' + str(e) + ')')
 
-    def get_products(self):
+    '''
+    def get_products_OLD(self): # alte Version: kann nur einen Barcode pro Artikel
         try:
             inventory = {}
 
@@ -742,7 +743,7 @@ class Vend(object):
 
             if response.status_code == 200:
                 response = json.loads(response.content.decode('utf-8'))
-                logging.info("Vend sale posted successfully")
+                logging.info("Read products from Vend")
                 
                 print(str(response["pagination"]["pages"]) + " product pages found.")
                 print ("read page 1")
@@ -762,6 +763,47 @@ class Vend(object):
                         inventory[i["sku"]] = [i["name"], i["price"]+i["tax"], i["id"]]
 
                 
+
+                #logging.info(str(response))
+                #pprint.pprint(response)
+                return inventory
+            else:
+                logging.error("Vend get_products FAILED (" + vend_api_url + ")")
+                logging.error("Vend header:\n" + str(self.vend_header))
+                #pprint.pprint(self.vend_header)
+                logging.error("Vend response:\n" + response.reason + " (status code: " + str(response.status_code) + ")")
+                #pprint.pprint(response)
+                return False
+                
+        except Exception as e: 
+            logging.error('Function Vend.get_products raised exception (' + str(e) + ')')
+            return False
+    '''
+    
+    
+    def get_products(self): # neue Version: Multi-SKU!
+        try:
+            inventory = {}
+
+            vend_endpoint = "2.0/products?page=1"
+            vend_api_url = self.vend_api_url_base + vend_endpoint
+            response = requests.get(vend_api_url, headers=self.vend_header)
+
+            if response.status_code == 200:
+                response = json.loads(response.content.decode('utf-8'))
+                logging.info("Read products from Vend")
+                #pprint.pprint(response)
+                
+                for i in response["data"]:
+                    #print(i["name"])
+                    #pprint.pprint(i)
+                    
+                    for code in i["product_codes"]:
+                        inventory[code["code"]] = [i["name"], i["price_including_tax"], i["id"]]
+                        #print(code["code"])
+                        #pprint.pprint(code)
+
+                #pprint.pprint(inventory)
 
                 #logging.info(str(response))
                 #pprint.pprint(response)

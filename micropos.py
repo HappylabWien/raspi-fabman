@@ -33,7 +33,10 @@ class MicroPOS(object):
             for row in reader:
                 self.inventory[row[0]]=row[1:]
             
-        print (str(len(self.inventory)) + " products loaded.")
+        if self.inventory:
+            print (str(len(self.inventory)) + " products loaded.")
+        else:
+            print ("No products loaded")
         
         self.barcode = None
         self.sale_products = {}	
