@@ -11,7 +11,7 @@ from vendingmachine import Vend
 
 class MicroPOS(object): 
 
-    def __init__(self, bridge, input_device = '/dev/input/event0', inventory_file = 'articles.csv', reset_code = 'RESET', undo_code = 'UNDO', timeout = 30, currency = "EUR", pin_reset_button = None, pin_undo_button = None, vend = None):
+    def __init__(self, bridge, input_device = '/dev/input/event0', inventory_file = 'articles.csv', reset_code = 'RESET', undo_code = 'UNDO', reload_code = "RELOAD", timeout = 30, currency = "EUR", pin_reset_button = None, pin_undo_button = None, vend = None):
 
         # setup scanner
         self.scanner = InputDevice(input_device)
@@ -42,6 +42,7 @@ class MicroPOS(object):
         self.sale_products = {}	
         self.reset_code = reset_code
         self.undo_code = undo_code
+        self.reload_code = reload_code
         self.timeout = timeout # reset sale if no barcode scanned for x seconds
         self.t_timeout = threading.Timer(self.timeout, thread_timeout) # thread for timeout
         self.currency = currency
@@ -398,7 +399,7 @@ if __name__ == '__main__':
 
     while True:
         barcode = pos.read_barcode()
-        print ("pos.undo_code = " + pos.undo_code + " / barcode = " + barcode)
+        print ("barcode = " + str(barcode))
         if (barcode is not None):
             if (barcode == pos.reset_code):
                 print("*** RESET SALE ***")
@@ -416,6 +417,19 @@ if __name__ == '__main__':
                 pos.t_timeout.cancel()
                 pos.t_timeout = threading.Timer(pos.timeout, thread_timeout)
                 pos.t_timeout.start()
+                
+            elif (barcode == pos.reload_code):
+                pos.bridge.display_text("Reloading\ninventory.\n\nPlease wait...")
+                pos.inventory = {}
+                # read invetory from vend via api and add to products list
+                pos.inventory = pos.vend.get_products()                
+            
+                #print("restart timeout countdown: " + str(pos.timeout) + "s")
+                #pos.t_timeout.cancel()
+                #pos.t_timeout = threading.Timer(pos.timeout, thread_timeout)
+                #pos.t_timeout.start()
+                
+                pos.update_display()
                 
             elif (barcode in pos.inventory):
                 pos.barcode = barcode
