@@ -233,11 +233,11 @@ You just need to set the `api_token` created before.
 
 #### Articles Database
 
-The article list with the prices are saved in a CSV file. An unique number is assigned to each article, which can then be printed out as a barcode. Here's an example for `/home/pi/raspi-fabman/articles.csv` (columns: id for barcode, article name, article price):
+The article list with the prices are saved in a tab-separated text file. An unique number is assigned to each article, which can then be printed out as a barcode. Here's an example for `/home/pi/raspi-fabman/articles.csv` (columns: id for barcode, article name, article price):
 ```
-1234567,Plywood,1.00
-7654321,Screw,2.00
-1111111,Endmill,3.00
+1234567	Plywood	1.00
+7654321	Screw	2.00
+1111111	Endmill	3.00
 ```
 
 ### Run MicroPOS
