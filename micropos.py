@@ -20,19 +20,21 @@ class MicroPOS(object):
         self.bridge = bridge
         self.bridge.display_text("Initializing\nDatabase.\n\nPlease wait...")
         
+        self.inventory_file = inventory_file
         self.inventory = {}
         
         # read invetory from vend via api and add to products list
         if (vend is not None): 
             self.inventory = vend.get_products()
-
-        # read inventory file and add to products list (default: articles.json)
+        
+        # read inventory file and add to products list (default: articles.csv)
         with open(inventory_file) as fin:
             #reader=csv.reader(fin, quotechar='"', skipinitialspace=True)
             reader=csv.reader(fin, quotechar='"', delimiter='\t', skipinitialspace=True)
             for row in reader:
+                #print(row[0])
+                #print(row[1:])
                 self.inventory[row[0]]=row[1:]
-            
         if self.inventory:
             print (str(len(self.inventory)) + " products loaded.")
         else:
@@ -69,13 +71,23 @@ class MicroPOS(object):
             GPIO.add_event_detect(pin_undo_button, GPIO.FALLING, callback=self._callback_undo_button, bouncetime=300)
         
         self.vend = vend
-
+    
     def del__(self):
         #self.bridge.display_text("Goodbye!")
         #time.sleep(2)
         #self.bridge.display_text("")
         self.scanner.close()
         
+    def append_inventory_file(self):
+        # read inventory file and add to products list (default: articles.csv)
+        with open(self.inventory_file) as fin:
+            #reader=csv.reader(fin, quotechar='"', skipinitialspace=True)
+            reader=csv.reader(fin, quotechar='"', delimiter='\t', skipinitialspace=True)
+            for row in reader:
+                #print(row[0])
+                #print(row[1:])
+                self.inventory[row[0]]=row[1:]
+                
     def read_barcode(self):
 
         # Provided as an example taken from my own keyboard attached to a Centos 6 box:
@@ -422,7 +434,14 @@ if __name__ == '__main__':
                 pos.bridge.display_text("Reloading\ninventory.\n\nPlease wait...")
                 pos.inventory = {}
                 # read invetory from vend via api and add to products list
-                pos.inventory = pos.vend.get_products()                
+                pos.inventory = pos.vend.get_products()
+                pos.append_inventory_file()
+
+                if pos.inventory:
+                    print (str(len(pos.inventory)) + " products loaded.")
+                else:
+                    print ("No products loaded")
+                
             
                 #print("restart timeout countdown: " + str(pos.timeout) + "s")
                 #pos.t_timeout.cancel()

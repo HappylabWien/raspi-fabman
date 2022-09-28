@@ -813,12 +813,13 @@ class Vend(object):
                 logging.error("Vend header:\n" + str(self.vend_header))
                 #pprint.pprint(self.vend_header)
                 logging.error("Vend response:\n" + response.reason + " (status code: " + str(response.status_code) + ")")
-                #pprint.pprint(response)
-                return False
+                #pprint.pprint(response)              
+                return false
                 
         except Exception as e: 
             logging.error('Function Vend.get_products raised exception (' + str(e) + ')')
-            return False
+            inventory = {}
+            return inventory
 
     '''
     def sell_product( # sells one product
